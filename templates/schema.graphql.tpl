@@ -47,6 +47,16 @@ input {{ .Name }}Create {
 }
 {{- end }}
 
+input {{ .Name }}Update {
+{{- range .Fields }}
+{{- if ne .Col.IsVirtualFromConfig true }}
+    {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
+	{{ lowerfirst .Name }}: {{ retypegraphql .Type }}
+	{{- end }}
+{{- end }}
+{{- end }}
+}
+
 type List{{ .Name }} {
     totalCount: Int!
     data: [{{ .Name }}!]!
