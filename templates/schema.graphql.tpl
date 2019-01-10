@@ -45,7 +45,6 @@ input {{ .Name }}Create {
 {{- end }}
 {{- end }}
 }
-{{- end }}
 
 input {{ .Name }}Update {
 {{- range .Fields }}
@@ -56,6 +55,7 @@ input {{ .Name }}Update {
 {{- end }}
 {{- end }}
 }
+{{- end }}
 
 type List{{ .Name }} {
     totalCount: Int!
