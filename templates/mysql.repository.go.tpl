@@ -301,7 +301,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) findAll{{ .Name }}BaseQuery(ctx context
                         qb = qb.Where(columnName + " BETWEEN ? AND ?", arrv...)
                     }
                 case entities.Raw:
-                    qb.Where(columnName + " " + fmt.Sprint(v))
+                    qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
                 }
             }
         }
