@@ -521,6 +521,16 @@ func (tl TypeLoader) LoadRelkind(args *ArgType, relType RelType) (map[string]*Ty
 			return nil, err
 		}
 
+		if excludeFields, ok := XoConfig.Graphql.ExcludeField[t.Table.TableName]; ok {
+			for _, field := range t.Fields {
+				for _, excludeField := range excludeFields {
+					if excludeField.ColumnName == field.Col.ColumnName {
+						field.GraphqlExcluded = true
+					}
+				}
+			}
+		}
+
 		tmpName := t.Name
 		err = args.ExecuteTemplate(GqlgenModelTemplate, "gqlgen", t.Name, t)
 		if err != nil {

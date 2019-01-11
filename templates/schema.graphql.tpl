@@ -5,7 +5,9 @@
 {{- $fkGroup := .ForeignKeyGroup }}
 type {{ .Name }} {
 {{- range .Fields }}
+{{- if ne .GraphqlExcluded true }}
     {{ lowerfirst .Name }}: {{ retypegraphql .Type }} {{- if .Col.NotNull }}!{{- end }}
+{{- end }}
 {{- end }}
 
 {{- if $fkGroup }}
@@ -29,8 +31,10 @@ type {{ .Name }} {
 }
 input {{ .Name }}Filter {
 {{- range .Fields }}
+{{- if ne .GraphqlExcluded true }}
 {{- if ne .Col.IsVirtualFromConfig true }}
     {{ lowerfirst .Name }}: FilterOnField
+{{- end }}
 {{- end }}
 {{- end }}
 }
@@ -38,20 +42,24 @@ input {{ .Name }}Filter {
 {{- if canhavecreatestruct .Fields $primaryKey }}
 input {{ .Name }}Create {
 {{- range .Fields }}
+{{- if ne .GraphqlExcluded true }}
 {{- if ne .Col.IsVirtualFromConfig true }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
 	{{ lowerfirst .Name }}: {{ retypegraphql .Type }}{{- if .Col.NotNull }}!{{- end }}
 	{{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
 }
 
 input {{ .Name }}Update {
 {{- range .Fields }}
+{{- if ne .GraphqlExcluded true }}
 {{- if ne .Col.IsVirtualFromConfig true }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
 	{{ lowerfirst .Name }}: {{ retypegraphql .Type }}
 	{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 }

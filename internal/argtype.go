@@ -161,6 +161,11 @@ type xoConfigType struct {
 		ColumnName string `yaml:"column_name"`
 		DataType   string `yaml:"data_type"`
 	} `yaml:"custom_field"`
+	Graphql struct {
+		ExcludeField map[string][]struct {
+			ColumnName string `yaml:"column_name"`
+		} `yaml:"exclude_field"`
+	}
 }
 
 var XoConfig xoConfigType

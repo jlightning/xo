@@ -4,3 +4,7 @@ custom_field:
       data_type: int
     - column_name: test2
       data_type: varchar(255)
+graphql:
+  exclude_field:
+    teacher:
+      - column_name: fk_class
