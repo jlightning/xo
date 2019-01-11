@@ -10,10 +10,10 @@ type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
     {{- if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
-    Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error)
-    Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error)
+    Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
+    Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
-    Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) error
+    Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
@@ -113,7 +113,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 
 {{ if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
 	// Update updates the {{ .Name }}Create in the database.
-	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error) {
+	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error) {
 		var err error
 
 		var db = {{ $shortRepo }}.Db
@@ -142,24 +142,15 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 			// sql query
 			qb := sq.Update("`{{ $table }}`").SetMap(updateMap).Where(sq.Eq{"`{{ .PrimaryKey.Col.ColumnName }}`": {{ .PrimaryKey.Name }}})
 		{{- end }}
-		qb = {{ $shortRepo }}.addFilterToUpdateBuilder(qb, filter)
 		query, args, err := qb.ToSql()
         if err != nil {
             return nil, errors.Wrap(err, "error in {{ .RepoName }}")
         }
 
         // run query
-        updateResult, err := db.Exec(query, args...)
+        _, err = db.Exec(query, args...)
         if err != nil {
             return nil, errors.Wrap(err, "error in {{ .RepoName }}")
-        }
-
-        count, err := updateResult.RowsAffected()
-        if err != nil {
-            return nil, err
-        }
-        if count == 0 {
-            return nil, errors.New("no rows affected")
         }
 
         selectQb := sq.Select("*").From("`{{ $table }}`")
@@ -184,7 +175,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 	}
 
     // Update updates the {{ .Name }} in the database.
-	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error) {
+	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error) {
     		var err error
 
     		var db = {{ $shortRepo }}.Db
@@ -218,23 +209,15 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
                 {{- end }}
                 }).Where(sq.Eq{"`{{ .PrimaryKey.Col.ColumnName }}`": {{ $short}}.{{ .PrimaryKey.Name }}})
     		{{- end }}
-    		qb = {{ $shortRepo}}.addFilterToUpdateBuilder(qb, filter)
     		query, args, err := qb.ToSql()
             if err != nil {
                 return nil, errors.Wrap(err, "error in {{ .RepoName }}")
             }
 
             // run query
-            updateResult, err := db.Exec(query, args...)
+            _, err = db.Exec(query, args...)
             if err != nil {
                 return nil, errors.Wrap(err, "error in {{ .RepoName }}")
-            }
-            count, err := updateResult.RowsAffected()
-            if err != nil {
-                return nil, err
-            }
-            if count == 0 {
-                return nil, errors.New("no rows affected")
             }
 
             selectQb := sq.Select("*").From("`{{ $table }}`")
@@ -262,7 +245,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 {{ end }}
 
 // Delete deletes the {{ .Name }} from the database.
-func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) error {
+func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error {
 	var err error
 
 	var db = {{ $shortRepo }}.Db
@@ -282,7 +265,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 		// sql query
 		qb := sq.Delete("`{{ $table }}`").Where(sq.Eq{"`{{ colname .PrimaryKey.Col}}`": {{ $short }}.{{ .PrimaryKey.Name }}})
 	{{- end }}
-	qb = {{ $shortRepo }}.addFilterToDeleteBuilder(qb, filter)
 
 	query, args, err := qb.ToSql()
     if err != nil {
@@ -290,101 +272,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     }
 
     // run query
-    deleteResult, err := db.Exec(query, args...)
-    if err != nil {
-        return errors.Wrap(err, "error in {{ .RepoName }}")
-    }
-
-    count, err := deleteResult.RowsAffected()
-    if err != nil {
-        return err
-    }
-    if count == 0 {
-        return errors.New("no rows affected")
-    }
-    return nil
-}
-
-func (sr *{{ .RepoName }}) addFilterToUpdateBuilder(qb *sq.UpdateBuilder, filter *entities.{{ .Name }}Filter) *sq.UpdateBuilder {
-	addFilter := func(qb *sq.UpdateBuilder, columnName string, filterOnField entities.FilterOnField) *sq.UpdateBuilder {
-		for _, filterList := range filterOnField {
-			for filterType, v := range filterList {
-				switch filterType {
-				case entities.Eq:
-					qb = qb.Where(sq.Eq{columnName: v})
-				case entities.Neq:
-					qb = qb.Where(sq.NotEq{columnName: v})
-				case entities.Gt:
-					qb = qb.Where(sq.Gt{columnName: v})
-				case entities.Gte:
-					qb = qb.Where(sq.GtOrEq{columnName: v})
-				case entities.Lt:
-					qb = qb.Where(sq.Lt{columnName: v})
-				case entities.Lte:
-					qb = qb.Where(sq.LtOrEq{columnName: v})
-				case entities.Like:
-					qb = qb.Where(columnName+" LIKE ?", v)
-				case entities.Between:
-					if arrv, ok := v.([]interface{}); ok && len(arrv) == 2 {
-						qb = qb.Where(columnName+" BETWEEN ? AND ?", arrv...)
-					}
-				case entities.Raw:
-					qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
-				}
-			}
-		}
-		return qb
-	}
-	if filter != nil {
-		{{- range .Fields }}
-            {{- if ne .Col.IsVirtualFromConfig true }}
-            qb = addFilter(qb, "`{{ .Col.ColumnName }}`", filter.{{ .Name }})
-            {{- end }}
-        {{- end }}
-	}
-
-	return qb
-}
-
-func (sr *{{ .RepoName }}) addFilterToDeleteBuilder(qb *sq.DeleteBuilder, filter *entities.{{ .Name }}Filter) *sq.DeleteBuilder {
-	addFilter := func(qb *sq.DeleteBuilder, columnName string, filterOnField entities.FilterOnField) *sq.DeleteBuilder {
-		for _, filterList := range filterOnField {
-			for filterType, v := range filterList {
-				switch filterType {
-				case entities.Eq:
-					qb = qb.Where(sq.Eq{columnName: v})
-				case entities.Neq:
-					qb = qb.Where(sq.NotEq{columnName: v})
-				case entities.Gt:
-					qb = qb.Where(sq.Gt{columnName: v})
-				case entities.Gte:
-					qb = qb.Where(sq.GtOrEq{columnName: v})
-				case entities.Lt:
-					qb = qb.Where(sq.Lt{columnName: v})
-				case entities.Lte:
-					qb = qb.Where(sq.LtOrEq{columnName: v})
-				case entities.Like:
-					qb = qb.Where(columnName+" LIKE ?", v)
-				case entities.Between:
-					if arrv, ok := v.([]interface{}); ok && len(arrv) == 2 {
-						qb = qb.Where(columnName+" BETWEEN ? AND ?", arrv...)
-					}
-				case entities.Raw:
-					qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
-				}
-			}
-		}
-		return qb
-	}
-	if filter != nil {
-		{{- range .Fields }}
-            {{- if ne .Col.IsVirtualFromConfig true }}
-            qb = addFilter(qb, "`{{ .Col.ColumnName }}`", filter.{{ .Name }})
-            {{- end }}
-        {{- end }}
-	}
-
-	return qb
+    _, err = db.Exec(query, args...)
+    return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) findAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder {
