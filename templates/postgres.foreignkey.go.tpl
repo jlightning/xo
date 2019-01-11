@@ -46,7 +46,7 @@ func Init{{ .Name }}({{- range $k, $v := .DependOnRepo }}{{ $v }} I{{ $v }}, {{-
                     return result.GetInterfaceItems(), err
                 },
                 func(key interface{}, item interface{}) bool {
-                    return item.(entities.{{ .RefType.Name }}).{{ .RefField.Name }} == key
+                    return util.Compare(item.(entities.{{ .RefType.Name }}).{{ .RefField.Name }}, key)
                 },
                 func(keys []interface{}, filter util.Filter) {
                     filter.(*entities.{{ .RefType.Name }}Filter).Add{{ .RefField.Name }}(entities.Eq, keys)
