@@ -10,10 +10,10 @@ type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
     {{- if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
-    Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
-    Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
+    Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error)
+    Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) (*entities.{{ .Name }}, error)
     {{- end }}
-    Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
+    Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}, filter *entities.{{ .Name }}Filter) error
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
