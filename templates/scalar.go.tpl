@@ -1,7 +1,7 @@
 func UnmarshalDatetime(v interface{}) (time.Time, error) {
 	if str, ok := v.(string); ok {
 		layout := "2006-01-02 15:04:05"
-		return time.Parse(layout, str)
+		return time.ParseInLocation(layout, str, time.Local)
 	}
 	return time.Time{}, errors.New("time should be a unix timestamp")
 }
