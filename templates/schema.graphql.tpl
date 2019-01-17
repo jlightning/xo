@@ -14,16 +14,16 @@ type {{ .Name }} {
 
 {{- range $fkGroup.ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}! @hasAccess(module: "{{ .RefType.Table.TableName }}", accessType: 1)
+    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}! @filterModifier(module: "{{ .RefType.Table.TableName }}")
 {{- end }}
 {{- end }}
 
 {{- range $fkGroup.OneToManyKeys }}
 {{- if ne .RevertCallFuncName "" }}
     {{- if .IsUnique }}
-    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }}! @hasAccess(module: "{{ .Type.Table.TableName }}", accessType: 1)
+    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }}! @filterModifier(module: "{{ .Type.Table.TableName }}")
     {{- else }}
-    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter, pagination: Pagination): List{{ .Type.Name }}! @hasAccess(module: "{{ .Type.Table.TableName }}", accessType: 1)
+    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter, pagination: Pagination): List{{ .Type.Name }}! @filterModifier(module: "{{ .Type.Table.TableName }}")
     {{- end }}
 {{- end }}
 {{- end }}
