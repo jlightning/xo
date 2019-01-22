@@ -15,7 +15,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
 	// sql query
-    qb := {{$shortRepo}}.findAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
+    qb := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
@@ -42,11 +42,11 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
 	// sql query
-	qb := {{$shortRepo}}.findAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
+	qb := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
 	{{- range $k, $v := .Fields }}
 	    qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
-	if qb, err = {{$shortRepo}}.addPagination(ctx, qb, pagination); err != nil {
+	if qb, err = {{$shortRepo}}.AddPagination(ctx, qb, pagination); err != nil {
 	    return list, err
 	}
 
@@ -61,7 +61,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
     var listMeta entities.ListMetadata
-    qb = {{ $shortRepo }}.findAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(*) AS count")
+    qb = {{ $shortRepo }}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(*) AS count")
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}

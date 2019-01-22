@@ -14,6 +14,8 @@ type I{{ .RepoName }} interface {
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
     Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
+    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder
+    AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
@@ -276,7 +278,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
-func ({{ $shortRepo }} *{{ .RepoName }}) findAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder {
+func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder {
     qb := sq.Select(fields).From("`{{ $table }}`")
     addFilter := func(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) *sq.SelectBuilder {
         for _, filterList := range filterOnField {
@@ -310,7 +312,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) findAll{{ .Name }}BaseQuery(ctx context
     if filter != nil {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
-            qb = addFilter(qb, "`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+            qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
             {{- end }}
         {{- end }}
     }
@@ -318,7 +320,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) findAll{{ .Name }}BaseQuery(ctx context
     return qb
 }
 
-func ({{ $shortRepo }} *{{ .RepoName }}) addPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
+func ({{ $shortRepo }} *{{ .RepoName }}) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
     sortFieldMap := map[string]string{
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
@@ -361,8 +363,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
         db = tx
     }
 
-    qb := {{ $shortRepo }}.findAll{{ .Name }}BaseQuery(ctx, filter, "*")
-    qb, err = {{ $shortRepo }}.addPagination(ctx, qb, pagination)
+    qb := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "*")
+    qb, err = {{ $shortRepo }}.AddPagination(ctx, qb, pagination)
     if err != nil {
         return entities.List{{ .Name }}{}, err
     }
@@ -378,7 +380,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
     }
 
     var listMeta entities.ListMetadata
-    query, args, err = {{ $shortRepo }}.findAll{{ .Name }}BaseQuery(ctx, filter, "COUNT(*) AS count").ToSql()
+    query, args, err = {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "COUNT(*) AS count").ToSql()
     if err != nil {
         return list, errors.Wrap(err, "error in {{ .RepoName }}")
     }
