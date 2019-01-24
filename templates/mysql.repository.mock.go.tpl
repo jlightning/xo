@@ -32,6 +32,16 @@ func (repo *{{ .RepoName }}Mock) Delete{{ .Name }}(ctx context.Context, {{ $shor
     return args.Error(0)
 }
 
+func (repo *{{ .RepoName }}Mock) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder {
+    args := repo.Called(ctx, filter, fields)
+    return args.Get(0).(*sq.SelectBuilder)
+}
+
+func (repo *{{ .RepoName }}Mock) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
+    args := repo.Called(ctx, qb, pagination)
+    return args.Get(0).(*sq.SelectBuilder), args.Error(1)
+}
+
 func (repo *{{ .RepoName }}Mock) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error) {
     args := repo.Called(ctx, filter, pagination)
     return args.Get(0).(entities.List{{ .Name }}), args.Error(1)
