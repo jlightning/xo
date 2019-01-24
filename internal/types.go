@@ -11,6 +11,7 @@ const (
 	ProcTemplate
 	TypeTemplate
 	RepositoryTemplate
+	RepositoryMockTemplate
 	ForeignKeyTemplate
 	IndexTemplate
 	QueryTypeTemplate
@@ -42,6 +43,8 @@ func (tt TemplateType) String() string {
 		s = "type"
 	case RepositoryTemplate:
 		s = "repository"
+	case RepositoryMockTemplate:
+		s = "repository.mock"
 	case ForeignKeyTemplate:
 		s = "foreignkey"
 	case IndexTemplate:

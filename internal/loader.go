@@ -611,6 +611,11 @@ func (tl TypeLoader) LoadRepositories(args *ArgType, tableMap map[string]*Type, 
 		if err != nil {
 			return err
 		}
+
+		err = args.ExecuteTemplate(RepositoryMockTemplate, t.RepoName, "", t)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

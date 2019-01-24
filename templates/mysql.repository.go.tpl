@@ -2,9 +2,6 @@
 {{- $short := (shortname .Name "err" "res" "sqlstr" "db" "XOLog") -}}
 {{- $table := (schema .Table.TableName) -}}
 {{- $primaryKey := .PrimaryKey }}
-{{- if .Comment -}}
-// {{ .Comment }}
-{{- else -}}
 
 type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
@@ -27,6 +24,9 @@ type I{{ .RepoName }} interface {
     {{ end }}
 }
 
+{{ if .Comment -}}
+// {{ .Comment }}
+{{- else -}}
 // {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
 {{- end }}
 type {{ .RepoName }} struct {
