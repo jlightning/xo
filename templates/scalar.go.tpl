@@ -136,6 +136,16 @@ func MarshalNullBool(v sql.NullBool) graphql.Marshaler {
 	})
 }
 
+func MarshalNullTime(t mysql.NullTime) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		if t.Valid {
+			io.WriteString(w, `"`+t.Time.Format("2006-01-02 15:04:05")+`"`)
+		} else {
+			io.WriteString(w, "null")
+		}
+	})
+}
+
 func UnmarshalNullTime(v interface{}) (mysql.NullTime, error) {
 	nt := mysql.NullTime{}
 	if str, ok := v.(string); ok {
