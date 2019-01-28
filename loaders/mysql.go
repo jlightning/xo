@@ -242,11 +242,11 @@ switchDT:
 }
 
 // MyEnumValues loads the enum values.
-func MyEnumValues(db models.XODB, schema string, enum string) ([]*models.EnumValue, error) {
+func MyEnumValues(db models.XODB, schema string, tableName string, enum string) ([]*models.EnumValue, error) {
 	var err error
 
 	// load enum vals
-	res, err := models.MyEnumValues(db, schema, enum)
+	res, err := models.MyEnumValues(db, schema, tableName, enum)
 	if err != nil {
 		return nil, err
 	}
