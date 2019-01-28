@@ -41,11 +41,13 @@ func MyTableColumns(db models.XODB, schema string, table string) ([]*models.Colu
 				ColumnName:          field.ColumnName,
 				DataType:            field.DataType,
 				IsEnum:              false,
-				NotNull:             true,
+				NotNull:             !field.Nullable,
 				DefaultValue:        sql.NullString{},
 				IsPrimaryKey:        false,
 				IsGenerated:         true,
 				IsVirtualFromConfig: true,
+				IsIncludeInCreate:  field.IncludeInCreate,
+				IsIncludeInUpdate:  field.IncludeInUpdate,
 			})
 		}
 	}
