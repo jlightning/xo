@@ -14,7 +14,7 @@ type {{ .Name }} {
 
 {{- range $fkGroup.ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}! @filterModifier(module: "{{ .RefType.Table.TableName }}")
+    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}{{- if .Field.Col.NotNull}}!{{- end }} @filterModifier(module: "{{ .RefType.Table.TableName }}")
 {{- end }}
 {{- end }}
 
