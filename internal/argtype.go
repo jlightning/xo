@@ -158,8 +158,11 @@ type ArgType struct {
 
 type xoConfigType struct {
 	CustomField map[string][]struct {
-		ColumnName string `yaml:"column_name"`
-		DataType   string `yaml:"data_type"`
+		ColumnName       string `yaml:"column_name"`
+		DataType         string `yaml:"data_type"`
+		Nullable         bool   `yaml:"nullable"`
+		IncludeInCreate bool   `yaml:"include_in_create"`
+		IncludeInUpdate bool   `yaml:"include_in_update"`
 	} `yaml:"custom_field"`
 	Graphql struct {
 		ExcludeField map[string][]struct {

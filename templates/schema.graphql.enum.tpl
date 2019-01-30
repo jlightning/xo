@@ -1,7 +1,8 @@
 {{- $type := .Name -}}
 
-enum {{ $type }} {
+{{/* enum {{ $type }} {
 {{- range .Values }}
     {{ .Val.EnumValue }}
 {{- end }}
-}
+} */}}
+scalar {{ $type }}

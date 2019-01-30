@@ -41,11 +41,13 @@ func MyTableColumns(db models.XODB, schema string, table string) ([]*models.Colu
 				ColumnName:          field.ColumnName,
 				DataType:            field.DataType,
 				IsEnum:              false,
-				NotNull:             true,
+				NotNull:             !field.Nullable,
 				DefaultValue:        sql.NullString{},
 				IsPrimaryKey:        false,
 				IsGenerated:         true,
 				IsVirtualFromConfig: true,
+				IsIncludeInCreate:  field.IncludeInCreate,
+				IsIncludeInUpdate:  field.IncludeInUpdate,
 			})
 		}
 	}
@@ -242,11 +244,11 @@ switchDT:
 }
 
 // MyEnumValues loads the enum values.
-func MyEnumValues(db models.XODB, schema string, enum string) ([]*models.EnumValue, error) {
+func MyEnumValues(db models.XODB, schema string, tableName string, enum string) ([]*models.EnumValue, error) {
 	var err error
 
 	// load enum vals
-	res, err := models.MyEnumValues(db, schema, enum)
+	res, err := models.MyEnumValues(db, schema, tableName, enum)
 	if err != nil {
 		return nil, err
 	}

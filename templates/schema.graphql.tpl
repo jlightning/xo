@@ -14,7 +14,7 @@ type {{ .Name }} {
 
 {{- range $fkGroup.ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}! @filterModifier(module: "{{ .RefType.Table.TableName }}")
+    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}{{- if .Field.Col.NotNull}}!{{- end }} @filterModifier(module: "{{ .RefType.Table.TableName }}")
 {{- end }}
 {{- end }}
 
@@ -43,7 +43,7 @@ input {{ .Name }}Filter {
 input {{ .Name }}Create {
 {{- range .Fields }}
 {{- if ne .GraphqlExcluded true }}
-{{- if ne .Col.IsVirtualFromConfig true }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInCreate }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
 	{{ lowerfirst .Name }}: {{ retypegraphql .Type }}{{- if .Col.NotNull }}!{{- end }}
 	{{- end }}
@@ -55,7 +55,7 @@ input {{ .Name }}Create {
 input {{ .Name }}Update {
 {{- range .Fields }}
 {{- if ne .GraphqlExcluded true }}
-{{- if ne .Col.IsVirtualFromConfig true }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInUpdate }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
 	{{ lowerfirst .Name }}: {{ retypegraphql .Type }}
 	{{- end }}

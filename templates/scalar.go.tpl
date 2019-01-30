@@ -149,8 +149,7 @@ func MarshalNullTime(t mysql.NullTime) graphql.Marshaler {
 func UnmarshalNullTime(v interface{}) (mysql.NullTime, error) {
 	nt := mysql.NullTime{}
 	if str, ok := v.(string); ok {
-		layout := "2006-01-02 15:04:05"
-		t, err := time.Parse(layout, str)
+		t, err := UnmarshalDatetime(str)
 		if err == nil {
 			nt.Time = t
 			nt.Valid = true

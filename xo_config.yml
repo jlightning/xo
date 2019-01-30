@@ -4,6 +4,7 @@ custom_field:
       data_type: int
     - column_name: test2
       data_type: varchar(255)
+      include_in_create: true
 graphql:
   exclude_field:
     teacher:

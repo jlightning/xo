@@ -75,7 +75,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
 type {{ .Name }}Create struct {
 {{- range .Fields }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
-    {{- if ne .Col.IsVirtualFromConfig true }}
+    {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInCreate }}
 	{{ .Name }} {{- if .Col.NotNull}} {{ retype .Type }}{{ else }} {{retypeNull .Type}}{{- end}} `json:"{{ .Col.ColumnName }}" db:"{{ .Col.ColumnName }}"` // {{ .Col.ColumnName }}
 	{{- end}}
 	{{- end }}
@@ -84,7 +84,7 @@ type {{ .Name }}Create struct {
 
 type {{ .Name }}Update struct {
 {{- range .Fields }}
-{{- if ne .Col.IsVirtualFromConfig true }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInUpdate }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
 	{{ .Name }} *{{ retype .Type }} // {{ .Col.ColumnName }}
 	{{- end }}
