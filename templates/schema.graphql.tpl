@@ -32,7 +32,7 @@ type {{ .Name }} {
 input {{ .Name }}Filter {
 {{- range .Fields }}
 {{- if ne .GraphqlExcluded true }}
-{{- if ne .Col.IsVirtualFromConfig true }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInFilter }}
     {{ lowerfirst .Name }}: FilterOnField
 {{- end }}
 {{- end }}

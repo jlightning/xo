@@ -19,7 +19,7 @@ type {{ .Name }} struct {
 
 type {{ .Name }}Filter struct {
 {{- range .Fields }}
-    {{- if ne .Col.IsVirtualFromConfig true }}
+    {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInFilter }}
 	{{ .Name }} FilterOnField
 	{{- end }}
 {{- end }}
@@ -39,7 +39,7 @@ func (f *{{ $typeName}}Filter) IsNil() bool {
 }
 
 {{- range .Fields }}
-{{- if ne .Col.IsVirtualFromConfig true }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInFilter }}
 func (f *{{ $typeName }}Filter) Add{{ .Name }}(filterType FilterType, v interface{}) {
     f.{{ .Name }} = append(f.{{ .Name }}, map[FilterType]interface{}{filterType: v})
 }
@@ -57,7 +57,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
         filter FilterOnField
         name string
     }{
-        {{- range .Fields }}{{ if ne .Col.IsVirtualFromConfig true }}{ filter: f.{{.Name}}, name: "{{ .Name }}" },{{end}}{{- end}}
+        {{- range .Fields }}{{ if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInFilter }}{ filter: f.{{.Name}}, name: "{{ .Name }}" },{{end}}{{- end}}
     }
     for _, item := range list {
         hash, err = item.filter.Hash()

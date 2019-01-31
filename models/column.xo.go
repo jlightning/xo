@@ -18,8 +18,10 @@ type Column struct {
 	IsPrimaryKey        bool           // is_primary_key
 	IsGenerated         bool
 	IsVirtualFromConfig bool
-	IsIncludeInCreate  bool
-	IsIncludeInUpdate  bool
+	IsIncludeInType     bool
+	IsIncludeInCreate   bool
+	IsIncludeInUpdate   bool
+	IsIncludeInFilter   bool
 }
 
 // PgTableColumns runs a custom query, returning results as Column.

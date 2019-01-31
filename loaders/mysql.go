@@ -46,8 +46,10 @@ func MyTableColumns(db models.XODB, schema string, table string) ([]*models.Colu
 				IsPrimaryKey:        false,
 				IsGenerated:         true,
 				IsVirtualFromConfig: true,
-				IsIncludeInCreate:  field.IncludeInCreate,
-				IsIncludeInUpdate:  field.IncludeInUpdate,
+				IsIncludeInType:     field.IncludeInType,
+				IsIncludeInCreate:   field.IncludeInCreate,
+				IsIncludeInUpdate:   field.IncludeInUpdate,
+				IsIncludeInFilter:   field.IncludeInFilter,
 			})
 		}
 	}
