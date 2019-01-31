@@ -12,7 +12,7 @@ type I{{ .Name }} interface {
 {{- range .OneToManyKeys }}
 {{- if ne .RevertCallFuncName "" }}
 {{- if .IsUnique }}
-    {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (entities.{{ .Type.Name }}, error)
+    {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (*entities.{{ .Type.Name }}, error)
 {{- else }}
     {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Type.Name }}, error)
 {{- end }}
@@ -88,14 +88,16 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *e
 {{- range .OneToManyKeys }}
 {{- if ne .RevertCallFuncName "" }}
 {{- if .IsUnique }}
-func ({{ $shortRepo }} *{{ $name }}) {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (entities.{{ .Type.Name }}, error) {
+func ({{ $shortRepo }} *{{ $name }}) {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (*entities.{{ .Type.Name }}, error) {
     if obj ==  nil {
-        return entities.{{ .Type.Name }}{}, nil
+        return nil, nil
     }
     {{- if eq .Field.Type .RefField.Type }}
-    return {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, obj.{{ .RefField.Name }}, filter)
+    res, err := {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, obj.{{ .RefField.Name }}, filter)
+    return &res, err
     {{- else }}
-    return {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, {{convertToNull (print "obj." .RefField.Name) .RefField.Type}}, filter)
+    res, err := {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, {{convertToNull (print "obj." .RefField.Name) .RefField.Type}}, filter)
+    return &res, err
     {{- end }}
 }
 {{- else }}

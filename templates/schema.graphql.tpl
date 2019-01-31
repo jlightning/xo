@@ -21,7 +21,7 @@ type {{ .Name }} {
 {{- range $fkGroup.OneToManyKeys }}
 {{- if ne .RevertCallFuncName "" }}
     {{- if .IsUnique }}
-    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }}! @filterModifier(module: "{{ .Type.Table.TableName }}")
+    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }} @filterModifier(module: "{{ .Type.Table.TableName }}")
     {{- else }}
     {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter, pagination: Pagination): List{{ .Type.Name }}! @filterModifier(module: "{{ .Type.Table.TableName }}")
     {{- end }}
