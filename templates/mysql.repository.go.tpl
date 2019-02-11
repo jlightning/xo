@@ -256,16 +256,20 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
         db = tx
     }
 
-	{{ if gt ( len .PrimaryKeyFields ) 1 }}
-		// sql query with composite primary key
-		qb := sq.Delete("`{{ $table }}`").Where(sq.Eq{
+    {{ if .HasActiveField }}
+    qb := sq.Update("`{{ $table }}`").Set("active", false)
+    {{ else }}
+    qb := sq.Delete("`{{ $table }}`")
+    {{ end -}}
+
+	{{- if gt ( len .PrimaryKeyFields ) 1 -}}
+		qb = qb.Where(sq.Eq{
         {{- range .PrimaryKeyFields }}
             "`{{ .Col.ColumnName }}`": {{ $short }}.{{ .Name }},
         {{- end }}
         })
-	{{- else }}
-		// sql query
-		qb := sq.Delete("`{{ $table }}`").Where(sq.Eq{"`{{ colname .PrimaryKey.Col}}`": {{ $short }}.{{ .PrimaryKey.Name }}})
+	{{- else -}}
+		qb = qb.Where(sq.Eq{"`{{ colname .PrimaryKey.Col}}`": {{ $short }}.{{ .PrimaryKey.Name }}})
 	{{- end }}
 
 	query, args, err := qb.ToSql()
@@ -312,7 +316,15 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
     if filter != nil {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
-            qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+            {{- if eq .Col.ColumnName "active" }}
+                if filter.Active == nil {
+                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
+                } else {
+                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+                }
+            {{- else }}
+                qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+            {{- end }}
             {{- end }}
         {{- end }}
     }

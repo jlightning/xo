@@ -20,6 +20,10 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
 
+    {{- if .Type.HasActiveField }}
+    qb = qb.Where(sq.Eq{"`active`": true})
+    {{- end }}
+
 	query, args, err := qb.ToSql()
     if err != nil {
         return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")

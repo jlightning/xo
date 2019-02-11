@@ -162,6 +162,7 @@ type Type struct {
 	Comment          string
 	Indexes          []*Index
 	ForeignKeyGroup  *ForeignKeyGroup
+	HasActiveField   bool
 }
 
 // ForeignKey is a template item for a foreign relationship on a table.

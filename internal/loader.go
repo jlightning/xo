@@ -521,6 +521,12 @@ func (tl TypeLoader) LoadRelkind(args *ArgType, relType RelType) (map[string]*Ty
 			return nil, err
 		}
 
+		for _, field := range t.Fields {
+			if field.Col.ColumnName == "active" && (field.Type == "bool" || field.Type == "sql.NullBool") {
+				t.HasActiveField = true
+			}
+		}
+
 		if excludeFields, ok := XoConfig.Graphql.ExcludeField[t.Table.TableName]; ok {
 			for _, field := range t.Fields {
 				for _, excludeField := range excludeFields {
