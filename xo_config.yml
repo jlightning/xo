@@ -8,6 +8,10 @@ custom_field:
       include_in_filter: true
     - column_name: test3
       data_type: boolean
+    - column_name: test4
+      data_type: boolean
+      include_in_type: false
+      include_in_filter: true
 graphql:
   exclude_field:
     teacher:

@@ -5,8 +5,10 @@
 {{- $fkGroup := .ForeignKeyGroup }}
 type {{ .Name }} {
 {{- range .Fields }}
+{{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
 {{- if ne .GraphqlTypeExcluded true }}
     {{ lowerfirst .Name }}: {{ retypegraphql .Type }} {{- if .Col.NotNull }}!{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 

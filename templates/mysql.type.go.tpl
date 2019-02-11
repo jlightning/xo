@@ -9,10 +9,12 @@
 {{- end }}
 type {{ .Name }} struct {
 {{- range .Fields }}
+    {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
     {{- if and .Col.IsEnum (ne .Col.NotNull true) }}
         {{ .Name }} *{{ retype .Type }} `json:"{{ .Col.ColumnName }}" db:"{{ .Col.ColumnName }}"` // {{ .Col.ColumnName }}
     {{- else }}
 	    {{ .Name }} {{ retype .Type }} `json:"{{ .Col.ColumnName }}" {{ if ne .Col.IsVirtualFromConfig true }}db:"{{ .Col.ColumnName }}"{{ end }}` // {{ .Col.ColumnName }}
+    {{- end }}
     {{- end }}
 {{- end }}
 }
