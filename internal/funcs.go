@@ -755,3 +755,11 @@ func (a *ArgType) canhavecreatestruct(fields []*Field, primaryKey *Field) bool {
 	}
 	return false
 }
+
+
+func NullBoolToBool(b *bool, defaultValue bool) bool {
+	if b != nil {
+		return *b
+	}
+	return defaultValue
+}

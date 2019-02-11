@@ -6,7 +6,10 @@ custom_field:
       data_type: varchar(255)
       include_in_create: true
       include_in_filter: true
+    - column_name: test3
+      data_type: boolean
 graphql:
   exclude_field:
     teacher:
       - column_name: fk_class
+        exclude_in_filter: false

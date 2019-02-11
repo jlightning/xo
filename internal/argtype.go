@@ -161,14 +161,18 @@ type xoConfigType struct {
 		ColumnName      string `yaml:"column_name"`
 		DataType        string `yaml:"data_type"`
 		Nullable        bool   `yaml:"nullable"`
-		IncludeInType   bool   `yaml:"include_in_type" default:"true"`
-		IncludeInCreate bool   `yaml:"include_in_create"`
-		IncludeInUpdate bool   `yaml:"include_in_update"`
-		IncludeInFilter bool   `yaml:"include_in_filter"`
+		IncludeInType   *bool  `yaml:"include_in_type"`
+		IncludeInCreate *bool  `yaml:"include_in_create"`
+		IncludeInUpdate *bool  `yaml:"include_in_update"`
+		IncludeInFilter *bool  `yaml:"include_in_filter"`
 	} `yaml:"custom_field"`
 	Graphql struct {
 		ExcludeField map[string][]struct {
-			ColumnName string `yaml:"column_name"`
+			ColumnName      string `yaml:"column_name"`
+			ExcludeInType   *bool  `yaml:"exclude_in_type"`
+			ExcludeInCreate *bool  `yaml:"exclude_in_create"`
+			ExcludeInFilter *bool  `yaml:"exclude_in_filter"`
+			ExcludeInUpdate *bool  `yaml:"exclude_in_update"`
 		} `yaml:"exclude_field"`
 	}
 }

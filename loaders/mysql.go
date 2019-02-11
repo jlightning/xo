@@ -46,10 +46,10 @@ func MyTableColumns(db models.XODB, schema string, table string) ([]*models.Colu
 				IsPrimaryKey:        false,
 				IsGenerated:         true,
 				IsVirtualFromConfig: true,
-				IsIncludeInType:     field.IncludeInType,
-				IsIncludeInCreate:   field.IncludeInCreate,
-				IsIncludeInUpdate:   field.IncludeInUpdate,
-				IsIncludeInFilter:   field.IncludeInFilter,
+				IsIncludeInType:     internal.NullBoolToBool(field.IncludeInType, true),
+				IsIncludeInCreate:   internal.NullBoolToBool(field.IncludeInCreate, false),
+				IsIncludeInUpdate:   internal.NullBoolToBool(field.IncludeInUpdate, false),
+				IsIncludeInFilter:   internal.NullBoolToBool(field.IncludeInFilter, false),
 			})
 		}
 	}

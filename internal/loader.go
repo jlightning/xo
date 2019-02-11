@@ -525,7 +525,10 @@ func (tl TypeLoader) LoadRelkind(args *ArgType, relType RelType) (map[string]*Ty
 			for _, field := range t.Fields {
 				for _, excludeField := range excludeFields {
 					if excludeField.ColumnName == field.Col.ColumnName {
-						field.GraphqlExcluded = true
+						field.GraphqlTypeExcluded = NullBoolToBool(excludeField.ExcludeInType, true)
+						field.GraphqlFilterExcluded = NullBoolToBool(excludeField.ExcludeInFilter, true)
+						field.GraphqlCreateExcluded = NullBoolToBool(excludeField.ExcludeInCreate, true)
+						field.GraphqlUpdateExcluded = NullBoolToBool(excludeField.ExcludeInUpdate, true)
 					}
 				}
 			}
