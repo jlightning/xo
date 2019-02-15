@@ -307,7 +307,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
                         qb = qb.Where(columnName + " BETWEEN ? AND ?", arrv...)
                     }
                 case entities.Raw:
-                    qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
+                    if sqlizer, ok := v.(sq.Sqlizer); ok {
+                        query, args, _ := sqlizer.ToSql()
+                        qb.Where("("+columnName+" "+query+")", args...)
+                    } else {
+                        qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
+                    }
                 }
             }
         }
@@ -327,6 +332,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
             {{- end }}
             {{- end }}
         {{- end }}
+    } else {
+        qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
     }
 
     return qb
