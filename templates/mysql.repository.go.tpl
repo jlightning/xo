@@ -333,7 +333,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
             {{- end }}
         {{- end }}
     } else {
-        qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
+        {{- range .Fields }}
+            {{- if ne .Col.IsVirtualFromConfig true }}
+                {{- if eq .Col.ColumnName "active" }}
+                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
+                {{- end }}
+            {{- end }}
+        {{- end }}
     }
 
     return qb
