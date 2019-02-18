@@ -540,6 +540,8 @@ func (tl TypeLoader) LoadRelkind(args *ArgType, relType RelType) (map[string]*Ty
 			}
 		}
 
+		t.GraphQLIncludeFields = XoConfig.Graphql.IncludeField[t.Table.TableName]
+
 		tmpName := t.Name
 		err = args.ExecuteTemplate(GqlgenModelTemplate, "gqlgen", t.Name, t)
 		if err != nil {

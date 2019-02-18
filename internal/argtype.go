@@ -167,6 +167,7 @@ type xoConfigType struct {
 		IncludeInFilter *bool  `yaml:"include_in_filter"`
 	} `yaml:"custom_field"`
 	Graphql struct {
+		IncludeField map[string]map[string]string `yaml:"include_field"`
 		ExcludeField map[string][]struct {
 			ColumnName      string `yaml:"column_name"`
 			ExcludeInType   *bool  `yaml:"exclude_in_type"`

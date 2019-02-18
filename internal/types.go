@@ -151,18 +151,19 @@ type Field struct {
 
 // Type is a template item for a type (ie, table/view/custom query).
 type Type struct {
-	Name             string
-	RepoName         string
-	Schema           string
-	RelType          RelType
-	PrimaryKey       *Field
-	PrimaryKeyFields []*Field
-	Fields           []*Field
-	Table            *models.Table
-	Comment          string
-	Indexes          []*Index
-	ForeignKeyGroup  *ForeignKeyGroup
-	HasActiveField   bool
+	Name                 string
+	RepoName             string
+	Schema               string
+	RelType              RelType
+	PrimaryKey           *Field
+	PrimaryKeyFields     []*Field
+	Fields               []*Field
+	Table                *models.Table
+	Comment              string
+	Indexes              []*Index
+	ForeignKeyGroup      *ForeignKeyGroup
+	HasActiveField       bool
+	GraphQLIncludeFields map[string]string
 }
 
 // ForeignKey is a template item for a foreign relationship on a table.

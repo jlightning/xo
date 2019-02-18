@@ -13,6 +13,9 @@ custom_field:
       include_in_type: false
       include_in_filter: true
 graphql:
+  include_field:
+    teacher:
+      enquiries: "(filter: EnquiryFilter, pagination: Pagination): ListEnquiry! @filterModifier(module: \"enquiry\")"
   exclude_field:
     teacher:
       - column_name: fk_class

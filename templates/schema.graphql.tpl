@@ -3,6 +3,7 @@
 {{- $tableVar := .Table }}
 {{- $primaryKey := .PrimaryKey }}
 {{- $fkGroup := .ForeignKeyGroup }}
+
 type {{ .Name }} {
 {{- range .Fields }}
 {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
@@ -29,6 +30,10 @@ type {{ .Name }} {
     {{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
+
+{{- range $k, $v := .GraphQLIncludeFields }}
+    {{$k}}{{$v}}
 {{- end }}
 }
 input {{ .Name }}Filter {
