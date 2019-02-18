@@ -3,7 +3,6 @@
 {{- $tableVar := .Table }}
 {{- $primaryKey := .PrimaryKey }}
 {{- $fkGroup := .ForeignKeyGroup }}
-
 type {{ .Name }} {
 {{- range .Fields }}
 {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
