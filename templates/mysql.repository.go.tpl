@@ -9,6 +9,7 @@
 type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
+    Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error)
     {{- if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
     Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
@@ -39,6 +40,10 @@ var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .Repo
 
 // Insert inserts the {{ .Name }}Create to the database.
 func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error) {
+    return {{ $shortRepo }}.Insert{{ .Name }}WithSuffix(ctx, {{ $short }}, nil)
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error) {
 	var err error
 
 	var db = {{ $shortRepo }}.Db
@@ -62,6 +67,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
          {{- end }}
          {{- end }}
     )
+    if suffix != nil {
+        suffixQuery, suffixArgs, suffixErr := suffix.ToSql()
+        if suffixErr != nil {
+            return nil, suffixErr
+        }
+        qb.Suffix(suffixQuery, suffixArgs...)
+    }
     query, args, err := qb.ToSql()
 	if err != nil {
 	    return nil, errors.Wrap(err, "error in {{ .RepoName }}")
@@ -88,6 +100,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
         {{- end }}
         {{- end }}
 	)
+	if suffix != nil {
+        suffixQuery, suffixArgs, suffixErr := suffix.ToSql()
+        if suffixErr != nil {
+            return nil, suffixErr
+        }
+        qb.Suffix(suffixQuery, suffixArgs...)
+    }
 	query, args, err := qb.ToSql()
 	if err != nil {
 	    return nil, errors.Wrap(err, "error in {{ .RepoName }}")
