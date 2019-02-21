@@ -2,6 +2,7 @@
 {{- $short := (shortname .Name "err" "res" "sqlstr" "db" "XOLog") -}}
 {{- $table := (schema .Table.TableName) -}}
 {{- $primaryKey := .PrimaryKey }}
+{{- $type := . }}
 {{- if .Comment -}}
 // {{ .Comment }}
 {{- else -}}
@@ -27,14 +28,21 @@ type I{{ .RepoName }} interface {
         {{- end }}
     {{- end }}
     {{- if .DoesTableGenApprovalTable }}
-    Approve{{ .Name }}ChangeRequest(IDDraft int) error
+    Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) error
+    Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
+    Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
+    Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) error
     {{- end }}
 }
 
 // {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
 {{- end }}
 type {{ .RepoName }} struct {
-    Db db_manager.IDb
+    Db db_manager.IDbTxBeginner
+    {{- if .DoesTableGenApprovalTable }}
+    {{ .Name }}DraftRepository I{{ .Name }}DraftRepository
+    {{ .Name }}DraftItemRepository I{{ .Name }}DraftItemRepository
+    {{- end }}
 }
 
 var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})))
@@ -439,14 +447,129 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
 }
 {{- end }}
 
-{{- if .DoesTableGenApprovalTable }}
-func ({{ $shortRepo }} *{{ .RepoName }})Approve{{ .Name }}ChangeRequest(IDDraft int) error {
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
+{{ if .DoesTableGenApprovalTable }}
+func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) error {
+    ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db)
+    if err != nil {
+        return err
     }
 
+    if newTxCreated {
+        defer db_manager.CommitTx(tx, &err, nil, nil)
+    }
 
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    if err != nil {
+        return err
+    }
+    if draft.Status != entities.{{ .Name }}DraftStatusPending {
+        return errors.New("invalid draft status")
+    }
+
+    var remarkNullStr sql.NullString
+    if remark != nil {
+        remarkNullStr = sql.NullString{Valid: true, String: *remark}
+    }
+    newStatus := entities.{{ .Name }}DraftStatusApproved
+    if _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr}); err != nil {
+        return err
+    }
+
+    draftItems, err := {{ $shortRepo }}.{{ .Name }}DraftItemRepository.FindAll{{ .Name }}DraftItem(ctx, &entities.{{ .Name }}DraftItemFilter{
+        FkDraft: entities.FilterOnField{{`{{ entities.Eq: IDDraft }}`}},
+    }, nil)
+    if err != nil {
+        return err
+    }
+
+    for _, draftItem := range draftItems.Data {
+        item := entities.{{ .Name }}Create{
+            {{- range .Fields }}
+                {{- if ne .Name $primaryKey.Name }}
+                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                        {{- if ne .Col.IsVirtualFromConfig true }}
+                            {{- if ne .Col.IsEnum true }}
+                                {{ .Name }}: draftItem.{{ .Name }},
+                            {{- end }}
+                        {{- end }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+        }
+        var byteData []byte
+        {{- range .Fields }}
+            {{- if ne .Name $primaryKey.Name }}
+                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                    {{- if ne .Col.IsVirtualFromConfig true }}
+                        {{- if .Col.IsEnum }}
+                            if byteData, err = draftItem.{{ .Name }}.MarshalText(); err != nil {
+                                return err
+                            }
+                            var tmp{{ .Name }} entities.{{ $type.Name }}{{ .Name }}
+                            if err = tmp{{ .Name }}.UnmarshalText(byteData); err != nil {
+                                 return err
+                            }
+                            item.{{ .Name }} = {{- if ne .Col.NotNull true -}}&{{- end -}}tmp{{ .Name }}
+                        {{- end }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+        {{- end }}
+
+        onDuplicate := (sq.Sqlizer)(nil)
+        {{- if .IsApprovalTableOnDuplicateUpdate }}
+            onDuplicate = sq.Expr("{{ `ON DUPLICATE UPDATE ` }}
+                {{- range .Fields }}
+                    {{- if ne .Name $primaryKey.Name }}
+                        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                            {{- if ne .Col.IsVirtualFromConfig true -}}
+                                `{{ $type.Table.TableName }}`.`{{ .Col.ColumnName }}` = ?,
+                            {{- end -}}
+                        {{- end }}
+                    {{- end }}
+                {{- end -}}
+                `{{- $primaryKey.Name }}` = `{{- $primaryKey.Name }}`",
+                {{- range .Fields }}
+                    {{- if ne .Name $primaryKey.Name }}
+                        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                            {{- if ne .Col.IsVirtualFromConfig true -}}
+                                draftItem.{{ .Name }},
+                            {{- end -}}
+                        {{- end }}
+                    {{- end }}
+                {{- end }}
+            )
+        {{- end }}
+
+        if _, err = {{ $shortRepo }}.Insert{{ .Name }}WithSuffix(ctx, item, onDuplicate); err != nil {
+            return err
+        }
+    }
+    return nil
 }
-{{- end }}
 
+func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error {
+    newStatus := entities.{{ .Name }}DraftStatusRejected
+    remarkNullStr := sql.NullString{Valid: true, String: remark}
+    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    return err
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error {
+    newStatus := entities.{{ .Name }}DraftStatusCancelled
+    remarkNullStr := sql.NullString{Valid: true, String: remark}
+    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    return err
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) error {
+    newStatus := entities.{{ .Name }}DraftStatusPending
+    var remarkNullStr sql.NullString
+    if remark != nil {
+        remarkNullStr = sql.NullString{Valid: true, String: *remark}
+    }
+    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    return err
+}
+
+{{ end }}

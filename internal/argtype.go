@@ -157,9 +157,11 @@ type ArgType struct {
 }
 
 type xoConfigType struct {
-	GenApprovalTable []string `yaml:"gen_approval_table"`
-	ExcludeTable     []string
-	CustomField      map[string][]struct {
+	GenApprovalTable map[string]struct {
+		UpdateOnDuplicate bool `yaml:"update_on_duplicate"`
+	} `yaml:"gen_approval_table"`
+	ExcludeTable []string
+	CustomField  map[string][]struct {
 		ColumnName      string `yaml:"column_name"`
 		DataType        string `yaml:"data_type"`
 		Nullable        bool   `yaml:"nullable"`
@@ -190,10 +192,8 @@ func (xc *xoConfigType) IsTableExcluded(tableName string) bool {
 }
 
 func (xc *xoConfigType) DoesTableGenApprovalTable(tableName string) bool {
-	for _, t := range xc.GenApprovalTable {
-		if t == tableName {
-			return true
-		}
+	if _, ok := xc.GenApprovalTable[tableName]; ok {
+		return true
 	}
 	return false
 }

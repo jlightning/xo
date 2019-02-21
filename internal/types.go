@@ -173,6 +173,13 @@ func (t *Type) DoesTableGenApprovalTable() bool {
 	return XoConfig.DoesTableGenApprovalTable(t.Table.TableName)
 }
 
+func (t *Type) IsApprovalTableOnDuplicateUpdate() bool {
+	if XoConfig.DoesTableGenApprovalTable(t.Table.TableName) && XoConfig.GenApprovalTable[t.Table.TableName].UpdateOnDuplicate {
+		return true
+	}
+	return false
+}
+
 // ForeignKey is a template item for a foreign relationship on a table.
 type ForeignKey struct {
 	Name               string

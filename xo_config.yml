@@ -1,5 +1,6 @@
 gen_approval_table:
-  - teacher
+  teacher:
+    update_on_duplicate: true
 custom_field:
   teacher:
     - column_name: test

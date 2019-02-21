@@ -1,3 +1,4 @@
+{{- $primaryKey := .PrimaryKey }}
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `fk_user` INT NOT NULL,
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `fk_draft` INT NOT NULL,
     {{- range .Fields }}
-        {{- if ne .Col.ColumnName "id" }}
+        {{- if ne .Name $primaryKey.Name }}
         {{- if ne .Col.IsGenerated true }}
         {{- if ne .Col.IsVirtualFromConfig true }}
     `{{ .Col.ColumnName }}` {{ upperCase .Col.RealDataType }} {{- if .Col.NotNull }} NOT NULL {{- end -}}
