@@ -2,6 +2,9 @@
 {{- $primaryKey := .PrimaryKey }}
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `id` INT NOT NULL AUTO_INCREMENT,
+    `fk_school` INT NOT NULL,
+    `fk_centre` INT,
+    `fk_class` INT,
     `fk_user` INT NOT NULL,
     `fk_approver` INT,
     `status` ENUM('draft', 'pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'draft',
@@ -11,6 +14,9 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
+    FOREIGN KEY (`fk_school`) REFERENCES `school`(`id`) ON DELETE NO ACTION,
+    FOREIGN KEY (`fk_centre`) REFERENCES `centre`(`id`) ON DELETE NO ACTION,
+    FOREIGN KEY (`fk_class`) REFERENCES `class`(`id`) ON DELETE NO ACTION,
     FOREIGN KEY (`fk_user`) REFERENCES `user`(`id`) ON DELETE NO ACTION,
     FOREIGN KEY (`fk_approver`) REFERENCES `user`(`id`) ON DELETE NO ACTION
 ) ENGINE=INNODB;
