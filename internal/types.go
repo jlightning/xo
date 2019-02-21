@@ -167,7 +167,10 @@ type Type struct {
 	ForeignKeyGroup      *ForeignKeyGroup
 	HasActiveField       bool
 	GraphQLIncludeFields map[string]string
-	GenApprovalTable     bool
+}
+
+func (t *Type) DoesTableGenApprovalTable() bool {
+	return XoConfig.DoesTableGenApprovalTable(t.Table.TableName)
 }
 
 // ForeignKey is a template item for a foreign relationship on a table.

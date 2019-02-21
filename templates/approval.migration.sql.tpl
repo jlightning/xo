@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`fk_user`) REFERENCES `user`(`id`) ON DELETE NO ACTION,
-    FOREIGN KEY (`fk_approver`) REFERENCES `user`(`id`) ON DELETE NO ACTION,
+    FOREIGN KEY (`fk_approver`) REFERENCES `user`(`id`) ON DELETE NO ACTION
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
         {{- if ne .Col.ColumnName "id" }}
         {{- if ne .Col.IsGenerated true }}
         {{- if ne .Col.IsVirtualFromConfig true }}
-    `{{ .Col.ColumnName }}` {{ upperCase .Col.DataType }} {{- if .Col.NotNull }} NOT NULL {{- end -}},
+    `{{ .Col.ColumnName }}` {{ upperCase .Col.RealDataType }} {{- if .Col.NotNull }} NOT NULL {{- end -}}
+        {{- if .Col.DefaultValue.Valid }} DEFAULT {{ .Col.DefaultValue.String }} {{- end -}},
         {{- end }}
         {{- end }}
         {{- end }}

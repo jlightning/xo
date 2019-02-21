@@ -14,6 +14,8 @@ custom_field:
       data_type: boolean
       include_in_type: false
       include_in_filter: true
+exclude_table:
+  - goose_db_version
 graphql:
   include_field:
     teacher:

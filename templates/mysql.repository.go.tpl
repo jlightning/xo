@@ -25,7 +25,10 @@ type I{{ .RepoName }} interface {
         {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Type.Name }}, error)
         {{- end  }}
         {{- end }}
-    {{ end }}
+    {{- end }}
+    {{- if .DoesTableGenApprovalTable }}
+    Approve{{ .Name }}ChangeRequest(IDDraft int) error
+    {{- end }}
 }
 
 // {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
@@ -433,6 +436,17 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
     list.TotalCount = listMeta.Count
 
     return list, errors.Wrap(err, "error in {{ .RepoName }}")
+}
+{{- end }}
+
+{{- if .DoesTableGenApprovalTable }}
+func ({{ $shortRepo }} *{{ .RepoName }})Approve{{ .Name }}ChangeRequest(IDDraft int) error {
+    tx := db_manager.GetTransactionContext(ctx)
+    if tx != nil {
+        db = tx
+    }
+
+
 }
 {{- end }}
 

@@ -513,7 +513,7 @@ func (tl TypeLoader) LoadRelkind(args *ArgType, relType RelType) (map[string]*Ty
 
 	// generate table templates
 	for _, t := range tableMap {
-		if t.Table.TableName == "goose_db_version" {
+		if XoConfig.IsTableExcluded(t.Table.TableName) {
 			continue
 		}
 		err = args.ExecuteTemplate(TypeTemplate, t.Name, "", t)
@@ -618,13 +618,10 @@ func (tl TypeLoader) LoadRepositories(args *ArgType, tableMap map[string]*Type, 
 			}
 		}
 
-		for _, approvalTable := range XoConfig.GenApprovalTable {
-			if t.Table.TableName == approvalTable {
-				t.GenApprovalTable = true
-				err = args.ExecuteTemplate(ApprovalMigrationTemplate, "00002_approval", t.Name, t)
-				if err != nil {
-					return err
-				}
+		if XoConfig.DoesTableGenApprovalTable(t.Table.TableName) {
+			err = args.ExecuteTemplate(ApprovalMigrationTemplate, "00002_approval", t.Name, t)
+			if err != nil {
+				return err
 			}
 		}
 
