@@ -27,13 +27,16 @@ type I{{ .RepoName }} interface {
         {{- end  }}
         {{- end }}
     {{- end }}
-    {{- if .DoesTableGenApprovalTable }}
+}
+
+{{ if .DoesTableGenApprovalTable }}
+type I{{ .RepoName }}CRRepository interface {
     Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) error
     Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
     Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
     Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) error
-    {{- end }}
 }
+{{- end }}
 
 // {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
 {{- end }}
@@ -45,7 +48,7 @@ type {{ .RepoName }} struct {
     {{- end }}
 }
 
-var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})))
+var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .RepoName }}CRRepository), new({{ .RepoName }})) {{- end }})
 
 {{ if .PrimaryKey }}
 
