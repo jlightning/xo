@@ -38,7 +38,7 @@ type I{{ .RepoName }} interface {
 // {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
 {{- end }}
 type {{ .RepoName }} struct {
-    Db db_manager.IDbTxBeginner
+    Db db_manager.IDb
     {{- if .DoesTableGenApprovalTable }}
     {{ .Name }}DraftRepository I{{ .Name }}DraftRepository
     {{ .Name }}DraftItemRepository I{{ .Name }}DraftItemRepository
@@ -449,7 +449,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
 
 {{ if .DoesTableGenApprovalTable }}
 func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) error {
-    ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db)
+    ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
     if err != nil {
         return err
     }
