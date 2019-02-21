@@ -157,7 +157,8 @@ type ArgType struct {
 }
 
 type xoConfigType struct {
-	CustomField map[string][]struct {
+	GenApprovalTable []string `yaml:"gen_approval_table"`
+	CustomField      map[string][]struct {
 		ColumnName      string `yaml:"column_name"`
 		DataType        string `yaml:"data_type"`
 		Nullable        bool   `yaml:"nullable"`

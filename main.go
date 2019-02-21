@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/knq/snaker"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,14 +15,17 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/knq/snaker"
+
 	"github.com/alexflint/go-arg"
 	"gopkg.in/yaml.v2"
+
+	"github.com/xo/dburl"
+	_ "github.com/xo/xoutil"
 
 	"github.com/JLightning/xo/internal"
 	_ "github.com/JLightning/xo/loaders"
 	"github.com/JLightning/xo/models"
-	"github.com/xo/dburl"
-	_ "github.com/xo/xoutil"
 )
 
 func main() {
@@ -302,6 +304,8 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		filename += ".yml"
 	} else if t.TemplateType == internal.WireTemplate {
 		filename += ".go"
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate {
+		filename += ".sql"
 	} else {
 		filename += args.Suffix
 	}
@@ -315,6 +319,8 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		filename = "graphql/" + filename
 	} else if t.TemplateType == internal.WireTemplate {
 		args.Package = "main"
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate {
+		filename = "migrations/" + filename
 	} else {
 		args.Package = "entities"
 		filename = "entities/" + filename

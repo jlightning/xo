@@ -1,3 +1,5 @@
+gen_approval_table:
+  - teacher
 custom_field:
   teacher:
     - column_name: test

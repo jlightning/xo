@@ -618,6 +618,16 @@ func (tl TypeLoader) LoadRepositories(args *ArgType, tableMap map[string]*Type, 
 			}
 		}
 
+		for _, approvalTable := range XoConfig.GenApprovalTable {
+			if t.Table.TableName == approvalTable {
+				t.GenApprovalTable = true
+				err = args.ExecuteTemplate(ApprovalMigrationTemplate, "00002_approval", t.Name, t)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		err = args.ExecuteTemplate(RepositoryTemplate, t.RepoName, "", t)
 		if err != nil {
 			return err

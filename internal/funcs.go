@@ -51,7 +51,12 @@ func (a *ArgType) NewTemplateFuncs() template.FuncMap {
 		},
 		"convertToNonNull": a.convertToNonNull,
 		"convertToNull":    a.convertToNull,
+		"upperCase":        a.upperCase,
 	}
+}
+
+func (a *ArgType) upperCase(input string) string {
+	return strings.ToUpper(input)
 }
 
 func (a *ArgType) convertToNonNull(name string, typ string) string {
@@ -755,7 +760,6 @@ func (a *ArgType) canhavecreatestruct(fields []*Field, primaryKey *Field) bool {
 	}
 	return false
 }
-
 
 func NullBoolToBool(b *bool, defaultValue bool) bool {
 	if b != nil {

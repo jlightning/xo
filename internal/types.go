@@ -26,6 +26,7 @@ const (
 	SchemaGraphQLScalarTemplate
 	GqlgenModelTemplate
 	WireTemplate
+	ApprovalMigrationTemplate
 )
 
 // String returns the name for the associated template type.
@@ -66,6 +67,8 @@ func (tt TemplateType) String() string {
 		s = "gqlgen.yml.model"
 	case WireTemplate:
 		s = "wire"
+	case ApprovalMigrationTemplate:
+		s = "approval.migration"
 	default:
 		panic("unknown TemplateType")
 	}
@@ -164,6 +167,7 @@ type Type struct {
 	ForeignKeyGroup      *ForeignKeyGroup
 	HasActiveField       bool
 	GraphQLIncludeFields map[string]string
+	GenApprovalTable     bool
 }
 
 // ForeignKey is a template item for a foreign relationship on a table.

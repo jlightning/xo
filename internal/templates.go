@@ -90,6 +90,9 @@ func (a *ArgType) ExecuteTemplate(tt TemplateType, name string, sub string, obj 
 	if tt == WireTemplate {
 		templateName = "wire.go.tpl"
 	}
+	if tt == ApprovalMigrationTemplate {
+		templateName = "approval.migration.sql.tpl"
+	}
 
 	// execute template
 	err = a.TemplateSet().Execute(v.Buf, templateName, obj)
