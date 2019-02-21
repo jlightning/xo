@@ -30,7 +30,7 @@ type I{{ .RepoName }} interface {
 }
 
 {{ if .DoesTableGenApprovalTable }}
-type I{{ .RepoName }}CRRepository interface {
+type I{{ .Name }}CRRepository interface {
     Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) error
     Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
     Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error
