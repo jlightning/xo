@@ -496,20 +496,20 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
                 {{- end }}
             {{- end }}
         }
-        var byteData []byte
         {{- range .Fields }}
             {{- if ne .Name $primaryKey.Name }}
                 {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
                     {{- if ne .Col.IsVirtualFromConfig true }}
                         {{- if .Col.IsEnum }}
-                            if byteData, err = draftItem.{{ .Name }}.MarshalText(); err != nil {
+                            if byteData, err := draftItem.{{ .Name }}.MarshalText(); err != nil {
                                 return err
+                            } else {
+                                var tmp{{ .Name }} entities.{{ $type.Name }}{{ .Name }}
+                                if err = tmp{{ .Name }}.UnmarshalText(byteData); err != nil {
+                                     return err
+                                }
+                                item.{{ .Name }} = {{- if ne .Col.NotNull true -}}&{{- end -}}tmp{{ .Name }}
                             }
-                            var tmp{{ .Name }} entities.{{ $type.Name }}{{ .Name }}
-                            if err = tmp{{ .Name }}.UnmarshalText(byteData); err != nil {
-                                 return err
-                            }
-                            item.{{ .Name }} = {{- if ne .Col.NotNull true -}}&{{- end -}}tmp{{ .Name }}
                         {{- end }}
                     {{- end }}
                 {{- end }}
