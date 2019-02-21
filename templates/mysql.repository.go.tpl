@@ -458,6 +458,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         defer db_manager.CommitTx(tx, &err, nil, nil)
     }
 
+    // TODO: lock row
     draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
     if err != nil {
         return err
