@@ -48,7 +48,7 @@ type {{ .RepoName }} struct {
     {{- end }}
 }
 
-var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .RepoName }}CRRepository), new({{ .RepoName }})) {{- end }})
+var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .Name }}CRRepository), new({{ .RepoName }})) {{- end }})
 
 {{ if .PrimaryKey }}
 
