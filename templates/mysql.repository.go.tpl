@@ -550,26 +550,50 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error {
+    // TODO: lock row
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    if err != nil {
+        return err
+    }
+    if draft.Status != entities.{{ .Name }}DraftStatusPending {
+        return errors.New("invalid draft status")
+    }
     newStatus := entities.{{ .Name }}DraftStatusRejected
     remarkNullStr := sql.NullString{Valid: true, String: remark}
-    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
     return err
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) error {
+    // TODO: lock row
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    if err != nil {
+        return err
+    }
+    if draft.Status != entities.{{ .Name }}DraftStatusPending {
+        return errors.New("invalid draft status")
+    }
     newStatus := entities.{{ .Name }}DraftStatusCancelled
     remarkNullStr := sql.NullString{Valid: true, String: remark}
-    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
     return err
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) error {
+    // TODO: lock row
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    if err != nil {
+        return err
+    }
+    if draft.Status != entities.{{ .Name }}DraftStatusDraft {
+        return errors.New("invalid draft status")
+    }
     newStatus := entities.{{ .Name }}DraftStatusPending
     var remarkNullStr sql.NullString
     if remark != nil {
         remarkNullStr = sql.NullString{Valid: true, String: *remark}
     }
-    _, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
+    _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, Remark: &remarkNullStr})
     return err
 }
 
