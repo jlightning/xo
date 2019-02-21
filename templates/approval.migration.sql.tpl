@@ -1,3 +1,4 @@
+-- +goose Up
 {{- $primaryKey := .PrimaryKey }}
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `id` INT NOT NULL AUTO_INCREMENT,
