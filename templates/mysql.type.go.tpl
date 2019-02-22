@@ -94,6 +94,19 @@ type {{ .Name }}Update struct {
 {{- end }}
 }
 
+func (u *{{ .Name }}Update) To{{ .Name }}Create() (res {{ .Name }}Create, err error) {
+    {{- range .Fields }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+        if (u.{{ .Name }} != nil) {
+            res.{{ .Name }} = {{- if or .Col.NotNull (ne .Col.IsEnum true) }}*{{ end }}u.{{ .Name }}
+        } {{ if .Col.NotNull }} else {
+            return res, errors.New("{{ .Col.ColumnName }} is required")
+        } {{ end }}
+        {{- end }}
+    {{- end }}
+    return
+}
+
 type List{{ .Name }} struct {
     TotalCount int
     Data []{{ .Name }}
