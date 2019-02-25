@@ -5,6 +5,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 )
 
 // Column represents column info.
@@ -13,6 +14,7 @@ type Column struct {
 	ColumnName          string // column_name
 	DataType            string // data_type
 	RealDataType        string
+	Extra               string
 	IsEnum              bool
 	NotNull             bool           // not_null
 	DefaultValue        sql.NullString // default_value
@@ -23,6 +25,21 @@ type Column struct {
 	IsIncludeInCreate   bool
 	IsIncludeInUpdate   bool
 	IsIncludeInFilter   bool
+}
+
+func (c *Column) GetMysqlDefaultStr() string {
+	str := ""
+	if c.DefaultValue.Valid {
+		if c.DefaultValue.String != "CURRENT_TIMESTAMP" {
+			str = " DEFAULT '" + c.DefaultValue.String + "'"
+		} else {
+			str = " DEFAULT " + c.DefaultValue.String
+		}
+	}
+	if strings.Contains(c.Extra, "on update") {
+		str += " " + strings.ToUpper(c.Extra)
+	}
+	return str
 }
 
 // PgTableColumns runs a custom query, returning results as Column.
@@ -80,6 +97,7 @@ func MyTableColumns(db XODB, schema string, table string) ([]*Column, error) {
 		`column_name, ` +
 		`IF(data_type = 'enum', column_name, column_type) AS data_type, ` +
 		`column_type AS real_data_type, ` +
+		`extra, ` +
 		`data_type = 'enum' AS is_enum, ` +
 		`IF(is_nullable = 'YES', false, true) AS not_null, ` +
 		`column_default AS default_value, ` +
@@ -103,7 +121,7 @@ func MyTableColumns(db XODB, schema string, table string) ([]*Column, error) {
 		c := Column{}
 
 		// scan
-		err = q.Scan(&c.FieldOrdinal, &c.ColumnName, &c.DataType, &c.RealDataType, &c.IsEnum, &c.NotNull, &c.DefaultValue, &c.IsPrimaryKey, &c.IsGenerated)
+		err = q.Scan(&c.FieldOrdinal, &c.ColumnName, &c.DataType, &c.RealDataType, &c.Extra, &c.IsEnum, &c.NotNull, &c.DefaultValue, &c.IsPrimaryKey, &c.IsGenerated)
 		if err != nil {
 			return nil, err
 		}

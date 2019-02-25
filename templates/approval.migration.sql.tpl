@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
         {{- if ne .Col.IsGenerated true }}
         {{- if ne .Col.IsVirtualFromConfig true }}
     `{{ .Col.ColumnName }}` {{ upperCaseMysqlType .Col.RealDataType }} {{- if .Col.NotNull }} NOT NULL {{- end -}}
-        {{- if .Col.DefaultValue.Valid }} DEFAULT {{ .Col.DefaultValue.String }} {{- end -}},
+        {{- .Col.GetMysqlDefaultStr -}},
         {{- end }}
         {{- end }}
         {{- end }}
