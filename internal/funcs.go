@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -49,14 +50,24 @@ func (a *ArgType) NewTemplateFuncs() template.FuncMap {
 			sort.Strings(reponames)
 			return reponames
 		},
-		"convertToNonNull": a.convertToNonNull,
-		"convertToNull":    a.convertToNull,
-		"upperCase":        a.upperCase,
+		"convertToNonNull":   a.convertToNonNull,
+		"convertToNull":      a.convertToNull,
+		"upperCaseMysqlType": a.upperCaseMysqlType,
 	}
 }
 
-func (a *ArgType) upperCase(input string) string {
-	return strings.ToUpper(input)
+func (a *ArgType) upperCaseMysqlType(input string) string {
+	rex := regexp.MustCompile("^([a-zA-Z]+)\\(.*\\)$")
+	matches := rex.FindAllStringSubmatch(input, -1)
+	if len(matches) == 1 {
+		for i, match := range matches[0] {
+			if i == 0 {
+				continue
+			}
+			input = strings.Replace(input, match, strings.ToUpper(match), -1)
+		}
+	}
+	return input
 }
 
 func (a *ArgType) convertToNonNull(name string, typ string) string {
