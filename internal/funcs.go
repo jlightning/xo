@@ -57,7 +57,7 @@ func (a *ArgType) NewTemplateFuncs() template.FuncMap {
 }
 
 func (a *ArgType) upperCaseMysqlType(input string) string {
-	rex := regexp.MustCompile("^([a-zA-Z]+)\\(.*\\)$")
+	rex := regexp.MustCompile("^([a-zA-Z]+)(?:\\(.*\\)|)$")
 	matches := rex.FindAllStringSubmatch(input, -1)
 	if len(matches) == 1 {
 		for i, match := range matches[0] {
