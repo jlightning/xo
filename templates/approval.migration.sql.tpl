@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `fk_approver` INT,
     `status` ENUM('draft', 'pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'draft',
     `label` VARCHAR(255),
-    `remark` VARCHAR(255),
     `active` BOOLEAN NOT NULL DEFAULT true,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -19,6 +18,17 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     FOREIGN KEY (`fk_class`) REFERENCES `class`(`id`) ON DELETE NO ACTION,
     FOREIGN KEY (`fk_user`) REFERENCES `user`(`id`) ON DELETE NO ACTION,
     FOREIGN KEY (`fk_approver`) REFERENCES `user`(`id`) ON DELETE NO ACTION
+) ENGINE=INNODB;
+
+CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_activity_log` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `fk_draft` INT NOT NULL,
+    `status` ENUM('draft', 'pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'draft',
+    `remark` VARCHAR(255),
+    `active` BOOLEAN NOT NULL DEFAULT true,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`fk_draft`) REFERENCES `{{ .Table.TableName}}_draft`(`id`) ON DELETE NO ACTION
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
