@@ -533,7 +533,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 
         onDuplicate := (sq.Sqlizer)(nil)
         {{- if .IsApprovalTableOnDuplicateUpdate }}
-            onDuplicate = sq.Expr("{{ `ON DUPLICATE UPDATE ` }}
+            onDuplicate = sq.Expr("{{ `ON DUPLICATE KEY UPDATE ` }}
                 {{- range .Fields }}
                     {{- if ne .Name $primaryKey.Name }}
                         {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
