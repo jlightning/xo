@@ -543,7 +543,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
                         {{- end }}
                     {{- end }}
                 {{- end -}}
-                `{{- $primaryKey.Name }}` = `{{- $primaryKey.Name }}`",
+                `{{ $type.Table.TableName }}`.`updated_at` = NOW()",
                 {{- range .Fields }}
                     {{- if ne .Name $primaryKey.Name }}
                         {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
