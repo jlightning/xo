@@ -160,7 +160,7 @@ type xoConfigType struct {
 	GenApprovalTable map[string]struct {
 		UpdateOnDuplicate bool `yaml:"update_on_duplicate"`
 	} `yaml:"gen_approval_table"`
-	ExcludeTable []string
+	ExcludeTable []string `yaml:"exclude_table"`
 	CustomField  map[string][]struct {
 		ColumnName      string `yaml:"column_name"`
 		DataType        string `yaml:"data_type"`

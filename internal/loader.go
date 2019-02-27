@@ -594,7 +594,7 @@ func (tl TypeLoader) LoadRepositories(args *ArgType, tableMap map[string]*Type, 
 	var err error
 	// generate table templates
 	for _, t := range tableMap {
-		if t.Table.TableName == "goose_db_version" {
+		if XoConfig.IsTableExcluded(t.Table.TableName) {
 			continue
 		}
 		ixMap := indexes[t]
