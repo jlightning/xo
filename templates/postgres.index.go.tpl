@@ -64,6 +64,11 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 
+    if pagination == nil || pagination.PerPage == nil || pagination.Page == nil {
+        list.TotalCount = len(list.Data)
+        return list, nil
+    }
+
     var listMeta entities.ListMetadata
     qb = {{ $shortRepo }}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(*) AS count")
     {{- range $k, $v := .Fields }}
