@@ -94,9 +94,15 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .RevertFuncName }}(ctx context.Context, 
     }
     {{- if eq .Field.Type .RefField.Type }}
     res, err := {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, obj.{{ .RefField.Name }}, filter)
+    if err != nil && errors.Cause(err) == sql.ErrNoRows {
+        return nil, nil
+    }
     return &res, err
     {{- else }}
     res, err := {{ $shortRepo }}.{{ .Type.RepoName}}.{{ .RevertCallFuncName }}(ctx, {{convertToNull (print "obj." .RefField.Name) .RefField.Type}}, filter)
+    if err != nil && errors.Cause(err) == sql.ErrNoRows {
+        return nil, nil
+    }
     return &res, err
     {{- end }}
 }
