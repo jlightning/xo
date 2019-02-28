@@ -458,6 +458,11 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
 
 {{ if .DoesTableGenApprovalTable }}
 func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) (bool, error) {
+    user := consts.GetUserContext(ctx)
+    if user == nil {
+        return false, consts.ErrUnauthorized
+    }
+
     ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
     if err != nil {
         return false, err
@@ -477,7 +482,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
     }
 
     newStatus := entities.{{ .Name }}DraftStatusApproved
-    if _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus}); err != nil {
+    fkApprover := util.NewNullInt64(int64(user.ID))
+    if _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, FkApprover: &fkApprover}); err != nil {
         return false, err
     }
 
@@ -488,6 +494,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 
     if _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
+        FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusApproved,
         Remark: remarkNullStr,
         Active: true,
@@ -497,6 +504,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 
     draftItems, err := {{ $shortRepo }}.{{ .Name }}DraftItemRepository.FindAll{{ .Name }}DraftItem(ctx, &entities.{{ .Name }}DraftItemFilter{
         FkDraft: entities.FilterOnField{{`{{ entities.Eq: IDDraft }}`}},
+        Active: entities.FilterOnField{{`{{ entities.Eq: []interface{}{false, true} }}`}},
     }, nil)
     if err != nil {
         return false, err
@@ -569,6 +577,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
+    user := consts.GetUserContext(ctx)
+    if user == nil {
+        return false, consts.ErrUnauthorized
+    }
+    fkApprover := util.NewNullInt64(int64(user.ID))
+
     // TODO: lock row
     ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
     if err != nil {
@@ -588,12 +602,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
         return false, err
     }
     newStatus := entities.{{ .Name }}DraftStatusRejected
-    if _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus}); err != nil {
+    if _, err = {{ $shortRepo }}.{{ .Name }}DraftRepository.Update{{ .Name }}DraftByFields(ctx, IDDraft, entities.{{ .Name }}DraftUpdate{Status: &newStatus, FkApprover: &fkApprover}); err != nil {
         return false, err
     }
 
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
+        FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusRejected,
         Remark: sql.NullString{Valid: true, String: remark},
         Active: true,
@@ -602,6 +617,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
+    user := consts.GetUserContext(ctx)
+    if user == nil {
+        return false, consts.ErrUnauthorized
+    }
+    fkUser := util.NewNullInt64(int64(user.ID))
+
     // TODO: lock row
     ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
     if err != nil {
@@ -627,6 +648,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
 
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
+        FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusCancelled,
         Remark: sql.NullString{Valid: true, String: remark},
         Active: true,
@@ -635,6 +657,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) (bool, error) {
+    user := consts.GetUserContext(ctx)
+    if user == nil {
+        return false, consts.ErrUnauthorized
+    }
+    fkUser := util.NewNullInt64(int64(user.ID))
+
     // TODO: lock row
     ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
     if err != nil {
@@ -664,6 +692,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Cont
 
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
+        FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusPending,
         Remark: remarkNullStr,
         Active: true,
