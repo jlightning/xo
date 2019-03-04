@@ -366,6 +366,11 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
             {{- end }}
             {{- end }}
         {{- end }}
+
+        if filter.Sqlizer != nil {
+            query, args, _ := filter.Sqlizer.ToSql()
+            qb.Where(query, args...)
+        }
     } else {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}

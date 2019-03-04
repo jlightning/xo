@@ -25,6 +25,7 @@ type {{ .Name }}Filter struct {
 	{{ .Name }} FilterOnField
 	{{- end }}
 {{- end }}
+    Sqlizer sq.Sqlizer
 }
 
 {{- $typeName := .Name }}
@@ -47,6 +48,10 @@ func (f *{{ $typeName }}Filter) Add{{ .Name }}(filterType FilterType, v interfac
 }
 {{- end }}
 {{- end }}
+
+func (f *{{ $typeName }}Filter) AddSqlizer(v sq.Sqlizer) {
+    f.Sqlizer = v
+}
 
 func (f *{{ $typeName }}Filter) Hash() (string, error) {
     var err error
