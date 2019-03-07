@@ -15,7 +15,10 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
 	// sql query
-    qb := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
+    qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+    if err != nil {
+        return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+    }
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
@@ -46,7 +49,10 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
 	// sql query
-	qb := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "*")
+	qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+	if err != nil {
+        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+    }
 	{{- range $k, $v := .Fields }}
 	    qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
@@ -70,7 +76,9 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     }
 
     var listMeta entities.ListMetadata
-    qb = {{ $shortRepo }}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(*) AS count")
+    if qb, err = {{ $shortRepo }}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(1) AS count"); err != nil {
+        return list, err
+    }
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}

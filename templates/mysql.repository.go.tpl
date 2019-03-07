@@ -16,7 +16,7 @@ type I{{ .RepoName }} interface {
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
     Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
-    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder
+    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error)
     AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
@@ -316,72 +316,76 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
-func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) *sq.SelectBuilder {
+func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
+    var err error
     qb := sq.Select(fields).From("`{{ $table }}`")
-    addFilter := func(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) *sq.SelectBuilder {
-        for _, filterList := range filterOnField {
-            for filterType, v := range filterList {
-                switch filterType {
-                case entities.Eq:
-                    qb = qb.Where(sq.Eq{columnName: v})
-                case entities.Neq:
-                    qb = qb.Where(sq.NotEq{columnName: v})
-                case entities.Gt:
-                    qb = qb.Where(sq.Gt{columnName: v})
-                case entities.Gte:
-                    qb = qb.Where(sq.GtOrEq{columnName: v})
-                case entities.Lt:
-                    qb = qb.Where(sq.Lt{columnName: v})
-                case entities.Lte:
-                    qb = qb.Where(sq.LtOrEq{columnName: v})
-                case entities.Like:
-                    qb = qb.Where(columnName + " LIKE ?", v)
-                case entities.Between:
-                    if arrv, ok := v.([]interface{}); ok && len(arrv) == 2 {
-                        qb = qb.Where(columnName + " BETWEEN ? AND ?", arrv...)
-                    }
-                case entities.Raw:
-                    if sqlizer, ok := v.(sq.Sqlizer); ok {
-                        query, args, _ := sqlizer.ToSql()
-                        qb.Where("("+columnName+" "+query+")", args...)
-                    } else {
-                        qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
-                    }
-                }
-            }
-        }
-        return qb
-    }
     if filter != nil {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
             {{- if eq .Col.ColumnName "active" }}
                 if filter.Active == nil {
-                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
+                    if qb, err = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} }); err != nil {
+                        return qb, err
+                    }
                 } else {
-                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+                    if qb, err = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }}); err != nil {
+                        return qb, err
+                    }
                 }
             {{- else }}
-                qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }})
+                if qb, err = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", filter.{{ .Name }}); err != nil {
+                    return qb, err
+                }
             {{- end }}
             {{- end }}
         {{- end }}
 
-        if filter.Sqlizer != nil {
-            query, args, _ := filter.Sqlizer.ToSql()
-            qb.Where(query, args...)
+        if filter.Wheres != nil {
+            for _, where := range filter.Wheres {
+                query, args, err := where.ToSql()
+                if err != nil {
+                    return qb, err
+                }
+                qb = qb.Where(query, args...)
+            }
+        }
+        if filter.Joins != nil {
+            for _, join := range filter.Joins {
+                query, args, err := join.ToSql()
+                if err != nil {
+                    return qb, err
+                }
+                qb = qb.Join(query, args...)
+            }
+        }
+        if filter.LeftJoins != nil {
+            for _, leftJoin := range filter.LeftJoins {
+                query, args, err := leftJoin.ToSql()
+                if err != nil {
+                    return qb, err
+                }
+                qb = qb.LeftJoin(query, args...)
+            }
+        }
+        if filter.GroupBys != nil {
+            qb = qb.GroupBy(filter.GroupBys...)
+        }
+        if filter.OrderBys != nil {
+            qb.OrderBy(filter.OrderBys...)
         }
     } else {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
                 {{- if eq .Col.ColumnName "active" }}
-                    qb = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} })
+                    if qb, err = addFilter(qb, "`{{ $table }}`.`{{ .Col.ColumnName }}`", entities.FilterOnField{ {entities.Eq: true} }); err != nil {
+                        return qb, err
+                    }
                 {{- end }}
             {{- end }}
         {{- end }}
     }
 
-    return qb
+    return qb, nil
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
@@ -397,27 +401,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) AddPagination(ctx context.Context, qb *
             {{- end }}
         {{- end }}
     }
-    if pagination != nil {
-        if pagination.Page != nil && pagination.PerPage != nil {
-            offset := uint64((*pagination.Page - 1) * *pagination.PerPage)
-            qb = qb.Offset(offset).Limit(uint64(*pagination.PerPage))
-        }
-        if pagination.Sort != nil {
-            var orderStrs []string
-            for _, field := range pagination.Sort {
-                if orderStr, ok := sortFieldMap[field]; ok {
-                    orderStrs = append(orderStrs, orderStr)
-                } else {
-                    return nil, errors.New("doesnt allow sorting on field `" + field + "` not found")
-                }
-            }
-            orderBy := strings.Join(orderStrs, ", ")
-            if orderBy != "" {
-                qb = qb.OrderBy(strings.Join(orderStrs, ", "))
-            }
-        }
-    }
-    return qb, nil
+    return addPagination(qb, pagination, sortFieldMap)
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Name }}, err error) {
@@ -427,10 +411,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
         db = tx
     }
 
-    qb := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "*")
+    qb, err := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+    if err != nil {
+        return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
+    }
     qb, err = {{ $shortRepo }}.AddPagination(ctx, qb, pagination)
     if err != nil {
-        return entities.List{{ .Name }}{}, err
+        return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
     }
 
     query, args, err := qb.ToSql()
@@ -449,7 +436,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
     }
 
     var listMeta entities.ListMetadata
-    query, args, err = {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "COUNT(*) AS count").ToSql()
+    if qb, err = {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "COUNT(1) AS count"); err != nil {
+        return entities.List{{ .Name }}{}, err
+    }
+    query, args, err = qb.ToSql()
     if err != nil {
         return list, errors.Wrap(err, "error in {{ .RepoName }}")
     }

@@ -25,7 +25,11 @@ type {{ .Name }}Filter struct {
 	{{ .Name }} FilterOnField
 	{{- end }}
 {{- end }}
-    Sqlizer sq.Sqlizer
+    Wheres []sq.Sqlizer
+    Joins []sq.Sqlizer
+    LeftJoins []sq.Sqlizer
+    GroupBys []string
+    OrderBys []string
 }
 
 {{- $typeName := .Name }}
@@ -49,8 +53,29 @@ func (f *{{ $typeName }}Filter) Add{{ .Name }}(filterType FilterType, v interfac
 {{- end }}
 {{- end }}
 
-func (f *{{ $typeName }}Filter) AddSqlizer(v sq.Sqlizer) {
-    f.Sqlizer = v
+func (f *{{ $typeName }}Filter) Where(v sq.Sqlizer) *{{ $typeName }}Filter {
+    f.Wheres = append(f.Wheres, v)
+    return f
+}
+
+func (f *{{ $typeName }}Filter) Join(j sq.Sqlizer) *{{ $typeName }}Filter {
+    f.Joins = append(f.Joins, j)
+    return f
+}
+
+func (f *{{ $typeName }}Filter) LeftJoin(j sq.Sqlizer) *{{ $typeName }}Filter {
+    f.LeftJoins = append(f.LeftJoins, j)
+    return f
+}
+
+func (f *{{ $typeName }}Filter) GroupBy(gb string) *{{ $typeName }}Filter {
+    f.GroupBys = append(f.GroupBys, gb)
+    return f
+}
+
+func (f *{{ $typeName }}Filter) OrderBy(ob string) *{{ $typeName }}Filter {
+    f.OrderBys = append(f.OrderBys, ob)
+    return f
 }
 
 func (f *{{ $typeName }}Filter) Hash() (string, error) {
@@ -71,8 +96,50 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
         if err != nil {
             return "", err
         }
-        _,err = io.WriteString(h, item.name+" -> "+hash)
-        if err != nil {
+        if _, err = io.WriteString(h, item.name+" -> "+hash); err != nil {
+            return "", err
+        }
+    }
+    if f.Wheres != nil {
+         for _, item := range f.Wheres {
+             query, args, err := item.ToSql()
+             if err != nil {
+                 return "", err
+             }
+             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+                 return "", err
+             }
+         }
+    }
+    if f.Joins != nil {
+         for _, item := range f.Joins {
+             query, args, err := item.ToSql()
+             if err != nil {
+                 return "", err
+             }
+             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+                 return "", err
+             }
+         }
+    }
+    if f.LeftJoins != nil {
+         for _, item := range f.LeftJoins {
+             query, args, err := item.ToSql()
+             if err != nil {
+                 return "", err
+             }
+             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+                 return "", err
+             }
+         }
+    }
+    if f.GroupBys != nil {
+        if _, err = io.WriteString(h, "groupBy -> "+fmt.Sprintf("%v", f.GroupBys)); err != nil {
+             return "", err
+         }
+    }
+    if f.OrderBys != nil {
+        if _, err = io.WriteString(h, "orderBy -> "+fmt.Sprintf("%v", f.OrderBys)); err != nil {
             return "", err
         }
     }

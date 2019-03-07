@@ -94,6 +94,12 @@ func main() {
 	//	os.Exit(1)
 	//}
 
+	err = args.ExecuteTemplate(internal.RepositoryCommonTemplate, "common", "", args)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
 	err = args.ExecuteTemplate(internal.PaginationTemplate, "pagination", "", args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -309,7 +315,7 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 	} else {
 		filename += args.Suffix
 	}
-	if t.TemplateType == internal.RepositoryTemplate || t.TemplateType == internal.IndexTemplate || t.TemplateType == internal.ForeignKeyTemplate {
+	if t.TemplateType == internal.RepositoryTemplate || t.TemplateType == internal.IndexTemplate || t.TemplateType == internal.ForeignKeyTemplate || t.TemplateType == internal.RepositoryCommonTemplate {
 		args.Package = "repositories"
 		filename = "repositories/" + filename
 	} else if t.TemplateType == internal.SchemaGraphQLTemplate || t.TemplateType == internal.SchemaGraphQLEnumTemplate || t.TemplateType == internal.SchemaGraphQLScalarTemplate || t.TemplateType == internal.PaginationSchemaTemplate {
