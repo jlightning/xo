@@ -351,7 +351,7 @@ func (tl TypeLoader) LoadEnums(args *ArgType) (map[string]*Enum, error) {
 			return nil, err
 		}
 
-		err = args.ExecuteTemplate(GqlgenModelTemplate, "gqlgen", "", e)
+		err = args.ExecuteTemplate(GqlgenModelTemplate, "gqlgen", e.Name, e)
 		if err != nil {
 			return nil, err
 		}
