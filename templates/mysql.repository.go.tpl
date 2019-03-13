@@ -439,6 +439,9 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
     if qb, err = {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "COUNT(1) AS count"); err != nil {
         return entities.List{{ .Name }}{}, err
     }
+    if filter != nil && len(filter.GroupBys) > 0 {
+        qb = sq.Select("COUNT(1) AS count").FromSelect(qb, "a")
+    }
     query, args, err = qb.ToSql()
     if err != nil {
         return list, errors.Wrap(err, "error in {{ .RepoName }}")

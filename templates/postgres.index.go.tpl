@@ -79,6 +79,9 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     if qb, err = {{ $shortRepo }}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "COUNT(1) AS count"); err != nil {
         return list, err
     }
+    if filter != nil && len(filter.GroupBys) > 0 {
+        qb = sq.Select("COUNT(1) AS count").FromSelect(qb, "a")
+    }
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
