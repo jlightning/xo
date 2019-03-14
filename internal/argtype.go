@@ -158,7 +158,8 @@ type ArgType struct {
 
 type xoConfigType struct {
 	GenApprovalTable map[string]struct {
-		UpdateOnDuplicate bool `yaml:"update_on_duplicate"`
+		UpdateOnDuplicate   bool `yaml:"update_on_duplicate"`
+		IncludeInactiveOnMove bool `yaml:"include_inactive_on_move"`
 	} `yaml:"gen_approval_table"`
 	ExcludeTable []string `yaml:"exclude_table"`
 	CustomField  map[string][]struct {

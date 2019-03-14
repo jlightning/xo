@@ -502,7 +502,9 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 
     draftItems, err := {{ $shortRepo }}.{{ .Name }}DraftItemRepository.FindAll{{ .Name }}DraftItem(ctx, &entities.{{ .Name }}DraftItemFilter{
         FkDraft: entities.FilterOnField{{`{{ entities.Eq: IDDraft }}`}},
+        {{- if .IsIncludeInactiveOnMove }}
         Active: entities.FilterOnField{{`{{ entities.Eq: []interface{}{false, true} }}`}},
+        {{- end }}
     }, nil)
     if err != nil {
         return false, err

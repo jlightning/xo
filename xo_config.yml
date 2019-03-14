@@ -1,6 +1,7 @@
 gen_approval_table:
   teacher:
     update_on_duplicate: true
+    include_inactive_on_move: true
 custom_field:
   teacher:
     - column_name: test
