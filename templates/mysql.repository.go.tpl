@@ -637,7 +637,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
     if err != nil {
         return false, err
     }
-    if draft.Status != entities.{{ .Name }}DraftStatusPending {
+    if draft.Status != entities.{{ .Name }}DraftStatusPending && draft.Status != entities.{{ .Name }}DraftStatusDraft {
         err = errors.New("invalid draft status")
         return false, err
     }
