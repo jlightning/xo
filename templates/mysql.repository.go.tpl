@@ -189,7 +189,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
         {{- end }}
 
         result := entities.{{ .Name }}{}
-        err = db.Get(ctx, &result, qb)
+        err = db.Get(ctx, &result, selectQb)
         return &result, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
@@ -248,7 +248,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 
 
             result := entities.{{ .Name }}{}
-            err = db.Get(ctx, &result, qb)
+            err = db.Get(ctx, &result, selectQb)
             return &result, errors.Wrap(err, "error in {{ .RepoName }}")
     	}
 {{ else }}
