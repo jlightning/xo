@@ -8,6 +8,7 @@
 {{- else -}}
 
 type I{{ .RepoName }} interface {
+    I{{ .RepoName }}QueryBuilder
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
     Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error)
@@ -16,8 +17,6 @@ type I{{ .RepoName }} interface {
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
     Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
-    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error)
-    AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
@@ -27,6 +26,11 @@ type I{{ .RepoName }} interface {
         {{- end  }}
         {{- end }}
     {{- end }}
+}
+
+type I{{ .RepoName }}QueryBuilder interface {
+    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error)
+    AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
 }
 
 {{ if .DoesTableGenApprovalTable }}
@@ -42,6 +46,7 @@ type I{{ .Name }}CRRepository interface {
 {{- end }}
 type {{ .RepoName }} struct {
     Db db_manager.IDb
+    QueryBuilder I{{ .RepoName }}QueryBuilder
     {{- if .DoesTableGenApprovalTable }}
     {{ .Name }}DraftRepository I{{ .Name }}DraftRepository
     {{ .Name }}DraftActivityLogRepository I{{ .Name }}DraftActivityLogRepository
@@ -49,7 +54,10 @@ type {{ .RepoName }} struct {
     {{- end }}
 }
 
-var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .Name }}CRRepository), new({{ .RepoName }})) {{- end }})
+type {{ .RepoName }}QueryBuilder struct {
+}
+
+var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, {{ .RepoName }}QueryBuilder{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), wire.Bind(new(I{{ .RepoName }}QueryBuilder), new({{ .RepoName }}QueryBuilder)), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .Name }}CRRepository), new({{ .RepoName }})) {{- end }})
 
 {{ if .PrimaryKey }}
 
@@ -287,6 +295,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
+    return {{ $shortRepo }}.QueryBuilder.FindAll{{ .Name }}BaseQuery(ctx, filter, fields)
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
     var err error
     qb := sq.Select(fields).From("`{{ $table }}`")
     if filter != nil {
@@ -359,6 +371,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
+    return {{ $shortRepo }}.QueryBuilder.AddPagination(ctx, qb, pagination)
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
     sortFieldMap := map[string]string{
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
