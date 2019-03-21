@@ -27,14 +27,9 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     qb = qb.Where(sq.Eq{"`active`": true})
     {{- end }}
 
-	query, args, err := qb.ToSql()
-    if err != nil {
-        return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
-    }
-
 	// run query
 	{{ $short }} := entities.{{ .Type.Name }}{}
-	err = db.Get(&{{ $short }}, query, args...)
+	err = db.Get(ctx, &{{ $short }}, qb)
     if err != nil {
         return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
@@ -60,13 +55,8 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
 	    return list, err
 	}
 
-	query, args, err := qb.ToSql()
-    if err != nil {
-        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
-    }
-
 	// run query
-    if err = db.Select(&list.Data, query, args...); err != nil {
+    if err = db.Select(ctx, &list.Data, qb); err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 
@@ -85,10 +75,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
-    if query, args, err = qb.ToSql(); err != nil {
-        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
-    }
-    if err = db.Get(&listMeta, query, args...); err != nil {
+    if err = db.Get(ctx, &listMeta, qb); err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 
