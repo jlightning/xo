@@ -456,7 +456,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
 
 {{ if .DoesTableGenApprovalTable }}
 func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) (bool, error) {
-    user := consts.GetUserContext(ctx)
+    user := context_manager.GetUserContext(ctx)
     if user == nil {
         return false, consts.ErrUnauthorized
     }
@@ -577,7 +577,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
-    user := consts.GetUserContext(ctx)
+    user := context_manager.GetUserContext(ctx)
     if user == nil {
         return false, consts.ErrUnauthorized
     }
@@ -617,7 +617,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
-    user := consts.GetUserContext(ctx)
+    user := context_manager.GetUserContext(ctx)
     if user == nil {
         return false, consts.ErrUnauthorized
     }
@@ -657,7 +657,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) (bool, error) {
-    user := consts.GetUserContext(ctx)
+    user := context_manager.GetUserContext(ctx)
     if user == nil {
         return false, consts.ErrUnauthorized
     }
