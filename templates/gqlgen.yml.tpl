@@ -1,9 +1,5 @@
 schema:
-  {{- range $k, $v := allschemas }}
-  - schema/{{ $v }}.graphql
-  {{- end }}
-  - schema/query.graphql
-  - schema/mutation.graphql
+  - "schema/*.graphql"
 exec:
   filename: generated.go
 model:
