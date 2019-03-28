@@ -25,6 +25,7 @@ type Column struct {
 	IsIncludeInCreate   bool
 	IsIncludeInUpdate   bool
 	IsIncludeInFilter   bool
+	DisableForCreate    bool
 }
 
 func (c *Column) GetMysqlDefaultStr() string {

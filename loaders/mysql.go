@@ -34,8 +34,28 @@ func init() {
 
 func MyTableColumns(db models.XODB, schema string, table string) ([]*models.Column, error) {
 	columns, err := models.MyTableColumns(db, schema, table)
+	activeColumnIsInDb := false
+	for _, column := range columns {
+		if column.ColumnName == "active" {
+			activeColumnIsInDb = true
+			isIncludeInCreate := false
+			if customFields, ok := internal.XoConfig.CustomField[table]; ok {
+				for _, field := range customFields {
+					if field.ColumnName == column.ColumnName {
+						isIncludeInCreate = internal.NullBoolToBool(field.IncludeInCreate, false)
+					}
+				}
+			}
+			if !isIncludeInCreate {
+				column.DisableForCreate = true
+			}
+		}
+	}
 	if customFields, ok := internal.XoConfig.CustomField[table]; ok {
 		for _, field := range customFields {
+			if field.ColumnName == "active" && activeColumnIsInDb {
+				continue
+			}
 			columns = append(columns, &models.Column{
 				FieldOrdinal:        columns[len(columns)-1].FieldOrdinal + 1,
 				ColumnName:          field.ColumnName,

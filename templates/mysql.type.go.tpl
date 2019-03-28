@@ -149,7 +149,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
 type {{ .Name }}Create struct {
 {{- range .Fields }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
-    {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInCreate }}
+    {{- if and (or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInCreate) (ne .Col.DisableForCreate true) }}
 	{{ .Name }} {{- if .Col.NotNull}} {{ retype .Type }}{{ else }} {{retypeNull .Type}}{{- end}} `json:"{{ .Col.ColumnName }}" db:"{{ .Col.ColumnName }}"` // {{ .Col.ColumnName }}
 	{{- end}}
 	{{- end }}
@@ -168,7 +168,7 @@ type {{ .Name }}Update struct {
 
 func (u *{{ .Name }}Update) To{{ .Name }}Create() (res {{ .Name }}Create, err error) {
     {{- range .Fields }}
-        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
         if (u.{{ .Name }} != nil) {
             res.{{ .Name }} = {{- if or .Col.NotNull (ne .Col.IsEnum true) }}*{{ end }}u.{{ .Name }}
         } {{ if .Col.NotNull }} else {

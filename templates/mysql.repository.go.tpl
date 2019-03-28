@@ -79,13 +79,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 	// sql insert query, primary key must be provided
 	qb := sq.Insert("`{{ $table }}`").Columns(
         {{- range .Fields }}
-        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
             "`{{ .Col.ColumnName }}`",
         {{- end }}
         {{- end }}
     ).Values(
          {{- range .Fields }}
-         {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+         {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
              {{ $short }}.{{ .Name }},
          {{- end }}
          {{- end }}
@@ -108,13 +108,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 	// sql insert query, primary key provided by autoincrement
 	qb := sq.Insert("`{{ $table }}`").Columns(
 	    {{- range .Fields }}
-	    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+	    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
             "`{{ .Col.ColumnName }}`",
         {{- end }}
         {{- end }}
 	).Values(
         {{- range .Fields }}
-        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
             {{ $short }}.{{ .Name }},
         {{- end }}
         {{- end }}
@@ -473,7 +473,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusApproved,
         Remark: remarkNullStr,
-        Active: true,
     }); err != nil {
         return false, err
     }
@@ -492,7 +491,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         item := entities.{{ .Name }}Create{
             {{- range .Fields }}
                 {{- if ne .Name $primaryKey.Name }}
-                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
                         {{- if ne .Col.IsVirtualFromConfig true }}
                             {{- if ne .Col.IsEnum true }}
                                 {{ .Name }}: draftItem.{{ .Name }},
@@ -504,7 +503,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         }
         {{- range .Fields }}
             {{- if ne .Name $primaryKey.Name }}
-                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) }}
+                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
                     {{- if ne .Col.IsVirtualFromConfig true }}
                         {{- if .Col.IsEnum }}
                             if byteData, err := draftItem.{{ .Name }}.MarshalText(); err != nil {
@@ -589,7 +588,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
         FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusRejected,
         Remark: sql.NullString{Valid: true, String: remark},
-        Active: true,
     })
     return err == nil, err
 }
@@ -629,7 +627,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
         FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusCancelled,
         Remark: sql.NullString{Valid: true, String: remark},
-        Active: true,
     })
     return err == nil, err
 }
@@ -673,7 +670,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Cont
         FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusPending,
         Remark: remarkNullStr,
-        Active: true,
     })
     return err == nil, err
 }
