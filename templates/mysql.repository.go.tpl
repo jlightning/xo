@@ -57,7 +57,13 @@ type {{ .RepoName }} struct {
 type {{ .RepoName }}QueryBuilder struct {
 }
 
-var  New{{ .RepoName }} = wire.NewSet({{ .RepoName }}{}, {{ .RepoName }}QueryBuilder{}, wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})), wire.Bind(new(I{{ .RepoName }}QueryBuilder), new({{ .RepoName }}QueryBuilder)), {{- if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .Name }}CRRepository), new({{ .RepoName }})) {{- end }})
+var  New{{ .RepoName }} = wire.NewSet(
+    wire.Struct(new({{ .RepoName }}), "*"),
+    wire.Struct(new({{ .RepoName }}QueryBuilder), "*"),
+    wire.Bind(new(I{{ .RepoName }}), new({{ .RepoName }})),
+    wire.Bind(new(I{{ .RepoName }}QueryBuilder), new({{ .RepoName }}QueryBuilder)),
+    {{ if .DoesTableGenApprovalTable -}} wire.Bind(new(I{{ .Name }}CRRepository), new({{ .RepoName }})), {{- end }}
+)
 
 {{ if .PrimaryKey }}
 
