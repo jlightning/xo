@@ -161,6 +161,8 @@ type xoConfigType struct {
 		UpdateOnDuplicate   bool `yaml:"update_on_duplicate"`
 		IncludeInactiveOnMove bool `yaml:"include_inactive_on_move"`
 	} `yaml:"gen_approval_table"`
+	GenAuditLogsTable map[string]struct {
+	} `yaml:"gen_audit_logs_table"`
 	ExcludeTable []string `yaml:"exclude_table"`
 	CustomField  map[string][]struct {
 		ColumnName      string `yaml:"column_name"`
@@ -194,6 +196,13 @@ func (xc *xoConfigType) IsTableExcluded(tableName string) bool {
 
 func (xc *xoConfigType) DoesTableGenApprovalTable(tableName string) bool {
 	if _, ok := xc.GenApprovalTable[tableName]; ok {
+		return true
+	}
+	return false
+}
+
+func (xc *xoConfigType) DoesTableGenAuditLogs(tableName string) bool {
+	if _,ok:=xc.GenAuditLogsTable[tableName]; ok {
 		return true
 	}
 	return false

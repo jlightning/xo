@@ -146,6 +146,36 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
+    {{ if .DoesTableGenAuditLogsTable }}
+    user := context_manager.GetUserContext(ctx)
+    var IDUser *int
+    if user != nil {
+        IDUser = &user.ID
+    }
+    qb = sq.Insert("`{{ $table }}_audit_log`").Columns(
+        `{{ $table }}_id`,
+        `audit_fk_user`,
+        `audit_action`,
+        {{- range .Fields }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+            "`{{ .Col.ColumnName }}`",
+        {{- end }}
+        {{- end }}
+    ).Values(
+        id,
+        IDUser,
+        "insert",
+        {{- range .Fields }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+            {{ $short }}.{{ .Name }},
+        {{- end }}
+        {{- end }}
+    )
+    if _, err = db.Exec(ctx, qb); err != nil {
+        return nil, err
+    }
+    {{ end }}
+
 	new{{ $short }} := entities.{{ .Name }}{}
 
 	err = db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
@@ -204,6 +234,39 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 
         result := entities.{{ .Name }}{}
         err = db.Get(ctx, &result, selectQb)
+
+        {{ if .DoesTableGenAuditLogsTable }}
+        if err == nil {
+            user := context_manager.GetUserContext(ctx)
+            var IDUser *int
+            if user != nil {
+                IDUser = &user.ID
+            }
+            insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
+                `{{ $table }}_id`,
+                `audit_fk_user`,
+                `audit_action`,
+                {{- range .Fields }}
+                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+                    "`{{ .Col.ColumnName }}`",
+                {{- end }}
+                {{- end }}
+            ).Values(
+                {{ .PrimaryKey.Name }},
+                IDUser,
+                "update",
+                {{- range .Fields }}
+                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+                    result.{{ .Name }},
+                {{- end }}
+                {{- end }}
+            )
+            if _, err = db.Exec(ctx, insertLogQb); err != nil {
+                return nil, err
+            }
+        }
+        {{ end }}
+
         return &result, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
@@ -260,9 +323,41 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
                 selectQb = selectQb.Where(sq.Eq{"`{{ .PrimaryKey.Col.ColumnName }}`": {{ $short}}.{{ .PrimaryKey.Name }}})
             {{- end }}
 
-
             result := entities.{{ .Name }}{}
             err = db.Get(ctx, &result, selectQb)
+
+            {{ if .DoesTableGenAuditLogsTable }}
+            if err == nil {
+                user := context_manager.GetUserContext(ctx)
+                var IDUser *int
+                if user != nil {
+                    IDUser = &user.ID
+                }
+                insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
+                    `{{ $table }}_id`,
+                    `audit_fk_user`,
+                    `audit_action`,
+                    {{- range .Fields }}
+                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+                        "`{{ .Col.ColumnName }}`",
+                    {{- end }}
+                    {{- end }}
+                ).Values(
+                    {{ $short}}.{{ .PrimaryKey.Name }},
+                    IDUser,
+                    "update",
+                    {{- range .Fields }}
+                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+                        result.{{ .Name }},
+                    {{- end }}
+                    {{- end }}
+                )
+                if _, err = db.Exec(ctx, insertLogQb); err != nil {
+                    return nil, err
+                }
+            }
+            {{ end }}
+
             return &result, errors.Wrap(err, "error in {{ .RepoName }}")
     	}
 {{ else }}
@@ -297,6 +392,27 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 
     // run query
     _, err = db.Exec(ctx, qb)
+    {{ if .DoesTableGenAuditLogsTable }}
+    if err == nil {
+        user := context_manager.GetUserContext(ctx)
+        var IDUser *int
+        if user != nil {
+            IDUser = &user.ID
+        }
+        insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
+            `{{ $table }}_id`,
+            `audit_fk_user`,
+            `audit_action`,
+        ).Values(
+            {{ $short }}.{{ .PrimaryKey.Name }},
+            IDUser,
+            "delete",
+        )
+        if _, err = db.Exec(ctx, insertLogQb); err != nil {
+            return err
+        }
+    }
+    {{ end }}
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 

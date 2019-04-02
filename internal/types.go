@@ -28,6 +28,7 @@ const (
 	GqlgenModelTemplate
 	WireTemplate
 	ApprovalMigrationTemplate
+	AuditLogsMigrationTemplate
 )
 
 // String returns the name for the associated template type.
@@ -72,6 +73,8 @@ func (tt TemplateType) String() string {
 		s = "wire"
 	case ApprovalMigrationTemplate:
 		s = "approval.migration"
+	case AuditLogsMigrationTemplate:
+		s = "audit.migration"
 	default:
 		panic("unknown TemplateType")
 	}
@@ -174,6 +177,10 @@ type Type struct {
 
 func (t *Type) DoesTableGenApprovalTable() bool {
 	return XoConfig.DoesTableGenApprovalTable(t.Table.TableName)
+}
+
+func (t *Type) DoesTableGenAuditLogsTable() bool {
+	return XoConfig.DoesTableGenAuditLogs(t.Table.TableName)
 }
 
 func (t *Type) IsApprovalTableOnDuplicateUpdate() bool {
