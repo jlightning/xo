@@ -30,6 +30,7 @@ type {{ .Name }}Filter struct {
     LeftJoins []sq.Sqlizer
     GroupBys []string
     OrderBys []string
+    Havings []sq.Sqlizer
 }
 
 {{- $typeName := .Name }}
@@ -78,6 +79,11 @@ func (f *{{ $typeName }}Filter) OrderBy(ob string) *{{ $typeName }}Filter {
     return f
 }
 
+func (f *{{ $typeName }}Filter) Having(h sq.Sqlizer) *{{ $typeName }}Filter {
+    f.Havings = append(f.Havings, h)
+    return f
+}
+
 func (f *{{ $typeName }}Filter) Hash() (string, error) {
     var err error
     var hash string
@@ -106,7 +112,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
              if err != nil {
                  return "", err
              }
-             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+             if _, err = io.WriteString(h, "where -> "+query+" -> "+fmt.Sprintf("%v", args)); err != nil {
                  return "", err
              }
          }
@@ -117,7 +123,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
              if err != nil {
                  return "", err
              }
-             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+             if _, err = io.WriteString(h, "join -> "+query+" -> "+fmt.Sprintf("%v", args)); err != nil {
                  return "", err
              }
          }
@@ -128,7 +134,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
              if err != nil {
                  return "", err
              }
-             if _, err = io.WriteString(h, query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+             if _, err = io.WriteString(h, "leftJoin -> "+query+" -> "+fmt.Sprintf("%v", args)); err != nil {
                  return "", err
              }
          }
@@ -142,6 +148,17 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
         if _, err = io.WriteString(h, "orderBy -> "+fmt.Sprintf("%v", f.OrderBys)); err != nil {
             return "", err
         }
+    }
+    if f.Havings != nil {
+         for _, item := range f.Havings {
+             query, args, err := item.ToSql()
+             if err != nil {
+                 return "", err
+             }
+             if _, err = io.WriteString(h, "having -> "+query+" -> "+fmt.Sprintf("%v", args)); err != nil {
+                 return "", err
+             }
+         }
     }
     return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
