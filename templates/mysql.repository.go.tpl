@@ -174,7 +174,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
     if _, err = db.Exec(ctx, qb); err != nil {
         return nil, err
     }
-    {{ end }}
+    {{- end }}
 
 	new{{ $short }} := entities.{{ .Name }}{}
 
@@ -235,7 +235,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
         result := entities.{{ .Name }}{}
         err = db.Get(ctx, &result, selectQb)
 
-        {{ if .DoesTableGenAuditLogsTable }}
+        {{- if .DoesTableGenAuditLogsTable }}
         if err == nil {
             user := context_manager.GetUserContext(ctx)
             var IDUser *int
@@ -266,7 +266,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
             }
         }
         {{ end }}
-
         return &result, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
@@ -326,7 +325,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
             result := entities.{{ .Name }}{}
             err = db.Get(ctx, &result, selectQb)
 
-            {{ if .DoesTableGenAuditLogsTable }}
+            {{- if .DoesTableGenAuditLogsTable }}
             if err == nil {
                 user := context_manager.GetUserContext(ctx)
                 var IDUser *int
@@ -357,7 +356,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
                 }
             }
             {{ end }}
-
             return &result, errors.Wrap(err, "error in {{ .RepoName }}")
     	}
 {{ else }}
@@ -392,7 +390,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 
     // run query
     _, err = db.Exec(ctx, qb)
-    {{ if .DoesTableGenAuditLogsTable }}
+    {{- if .DoesTableGenAuditLogsTable }}
     if err == nil {
         user := context_manager.GetUserContext(ctx)
         var IDUser *int
