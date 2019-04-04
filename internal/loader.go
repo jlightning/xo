@@ -619,7 +619,14 @@ func (tl TypeLoader) LoadRepositories(args *ArgType, tableMap map[string]*Type, 
 		}
 
 		if XoConfig.DoesTableGenApprovalTable(t.Table.TableName) {
-			err = args.ExecuteTemplate(ApprovalMigrationTemplate, "00002_approval", t.Name, t)
+			err = args.ExecuteTemplate(ApprovalMigrationTemplate, "00002_xo", t.Name, t)
+			if err != nil {
+				return err
+			}
+		}
+
+		if XoConfig.DoesTableGenAuditLogs(t.Table.TableName) {
+			err = args.ExecuteTemplate(AuditLogsMigrationTemplate, "00002_xo", t.Name, t)
 			if err != nil {
 				return err
 			}

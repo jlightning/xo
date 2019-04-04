@@ -310,7 +310,7 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		filename += ".yml"
 	} else if t.TemplateType == internal.WireTemplate {
 		filename += ".go"
-	} else if t.TemplateType == internal.ApprovalMigrationTemplate {
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType  == internal.AuditLogsMigrationTemplate {
 		filename += ".sql"
 	} else {
 		filename += args.Suffix
@@ -325,7 +325,7 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		filename = "graphql/" + filename
 	} else if t.TemplateType == internal.WireTemplate {
 		args.Package = "main"
-	} else if t.TemplateType == internal.ApprovalMigrationTemplate {
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType  == internal.AuditLogsMigrationTemplate{
 		filename = "migrations/" + filename
 	} else {
 		args.Package = "entities"

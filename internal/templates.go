@@ -94,6 +94,9 @@ func (a *ArgType) ExecuteTemplate(tt TemplateType, name string, sub string, obj 
 	if tt == ApprovalMigrationTemplate {
 		templateName = "approval.migration.sql.tpl"
 	}
+	if tt == AuditLogsMigrationTemplate {
+		templateName = "audit.migration.sql.tpl"
+	}
 
 	// execute template
 	err = a.TemplateSet().Execute(v.Buf, templateName, obj)
