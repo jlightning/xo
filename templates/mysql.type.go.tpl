@@ -42,6 +42,10 @@ func (f *{{ $typeName }}Filter) NewFilter() interface{} {
     return f
 }
 
+func (f *{{ $typeName }}Filter) TableName() string {
+    return "`{{ $table }}`"
+}
+
 func (f *{{ $typeName}}Filter) IsNil() bool {
     return f == nil
 }
@@ -55,6 +59,11 @@ func (f *{{ $typeName }}Filter) Add{{ .Name }}(filterType FilterType, v interfac
 {{- end }}
 
 func (f *{{ $typeName }}Filter) Where(v sq.Sqlizer) *{{ $typeName }}Filter {
+    f.Wheres = append(f.Wheres, v)
+    return f
+}
+
+func (f *{{ $typeName }}Filter) WhereInterface(v sq.Sqlizer) interface{} {
     f.Wheres = append(f.Wheres, v)
     return f
 }
