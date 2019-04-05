@@ -1,3 +1,11 @@
+type AuditLogAction string
+
+const (
+    Insert AuditLogAction = "insert"
+    Update = "update"
+    Delete = "delete"
+)
+
 func addFilter(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
     for _, filterList := range filterOnField {
         for filterType, v := range filterList {

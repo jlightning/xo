@@ -26,6 +26,9 @@ type I{{ .RepoName }} interface {
         {{- end  }}
         {{- end }}
     {{- end }}
+    {{ if .DoesTableGenAuditLogsTable }}
+    InsertAuditLog(ctx context.Context, id int, action AuditLogAction) error
+    {{ end }}
 }
 
 type I{{ .RepoName }}QueryBuilder interface {
@@ -147,31 +150,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 	}
 
     {{ if .DoesTableGenAuditLogsTable }}
-    user := context_manager.GetUserContext(ctx)
-    var IDUser *int
-    if user != nil {
-        IDUser = &user.ID
-    }
-    qb = sq.Insert("`{{ $table }}_audit_log`").Columns(
-        `{{ $table }}_id`,
-        `audit_fk_user`,
-        `audit_action`,
-        {{- range .Fields }}
-        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-            "`{{ .Col.ColumnName }}`",
-        {{- end }}
-        {{- end }}
-    ).Values(
-        id,
-        IDUser,
-        "insert",
-        {{- range .Fields }}
-        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-            {{ $short }}.{{ .Name }},
-        {{- end }}
-        {{- end }}
-    )
-    if _, err = db.Exec(ctx, qb); err != nil {
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, int(id), Insert); err != nil {
         return nil, err
     }
     {{- end }}
@@ -182,6 +161,45 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 
 	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
 }
+
+{{ if .DoesTableGenAuditLogsTable }}
+func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id int, action AuditLogAction) error {
+	var db = {{ $shortRepo }}.Db
+	tx := db_manager.GetTransactionContext(ctx)
+	if tx != nil {
+		db = tx
+	}
+
+	user := context_manager.GetUserContext(ctx)
+    IDUserSelect := "NULL AS `audit_fk_user`"
+    if user != nil {
+        IDUserSelect = strconv.Itoa(user.ID)+" AS `audit_fk_user`"
+    }
+    selectForInsertQb := sq.Select(
+        "`{{ $table }}`.`{{ $primaryKey.Col.ColumnName }}` AS `{{ $table }}_id`",
+        IDUserSelect,
+        "'"+string(action)+"' AS `audit_action`",
+        {{- range .Fields }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+            "`{{ $table }}`.`{{ .Col.ColumnName }}`",
+        {{- end }}
+        {{- end }}
+        ).From("`{{ $table }}`").Where(sq.Eq{"`{{ $table }}`.`{{ $primaryKey.Col.ColumnName }}`": id})
+    qb := sq.Insert("`{{ $table }}_audit_log`").Columns(
+        `{{ $table }}_id`,
+        `audit_fk_user`,
+        `audit_action`,
+        {{- range .Fields }}
+        {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
+            "`{{ .Col.ColumnName }}`",
+        {{- end }}
+        {{- end }}
+    ).Select(selectForInsertQb)
+
+	_, err := db.Exec(ctx, qb)
+	return err
+}
+{{ end }}
 
 {{ if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
 	// Update updates the {{ .Name }}Create in the database.
@@ -236,34 +254,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
         err = db.Get(ctx, &result, selectQb)
 
         {{- if .DoesTableGenAuditLogsTable }}
-        if err == nil {
-            user := context_manager.GetUserContext(ctx)
-            var IDUser *int
-            if user != nil {
-                IDUser = &user.ID
-            }
-            insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
-                `{{ $table }}_id`,
-                `audit_fk_user`,
-                `audit_action`,
-                {{- range .Fields }}
-                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-                    "`{{ .Col.ColumnName }}`",
-                {{- end }}
-                {{- end }}
-            ).Values(
-                {{ .PrimaryKey.Name }},
-                IDUser,
-                "update",
-                {{- range .Fields }}
-                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-                    result.{{ .Name }},
-                {{- end }}
-                {{- end }}
-            )
-            if _, err = db.Exec(ctx, insertLogQb); err != nil {
-                return nil, err
-            }
+        if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $primaryKey.Name }}, Update); err != nil {
+            return nil, err
         }
         {{ end }}
         return &result, errors.Wrap(err, "error in {{ .RepoName }}")
@@ -326,34 +318,8 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
             err = db.Get(ctx, &result, selectQb)
 
             {{- if .DoesTableGenAuditLogsTable }}
-            if err == nil {
-                user := context_manager.GetUserContext(ctx)
-                var IDUser *int
-                if user != nil {
-                    IDUser = &user.ID
-                }
-                insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
-                    `{{ $table }}_id`,
-                    `audit_fk_user`,
-                    `audit_action`,
-                    {{- range .Fields }}
-                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-                        "`{{ .Col.ColumnName }}`",
-                    {{- end }}
-                    {{- end }}
-                ).Values(
-                    {{ $short}}.{{ .PrimaryKey.Name }},
-                    IDUser,
-                    "update",
-                    {{- range .Fields }}
-                    {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) (ne .Col.DisableForCreate true) }}
-                        result.{{ .Name }},
-                    {{- end }}
-                    {{- end }}
-                )
-                if _, err = db.Exec(ctx, insertLogQb); err != nil {
-                    return nil, err
-                }
+            if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Update); err != nil {
+                return nil, err
             }
             {{ end }}
             return &result, errors.Wrap(err, "error in {{ .RepoName }}")
@@ -375,6 +341,11 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     {{ if .HasActiveField }}
     qb := sq.Update("`{{ $table }}`").Set("active", false)
     {{ else }}
+    {{- if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+        return err
+    }
+    {{ end }}
     qb := sq.Delete("`{{ $table }}`")
     {{ end -}}
 
@@ -390,27 +361,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 
     // run query
     _, err = db.Exec(ctx, qb)
+    {{- if .HasActiveField }}
     {{- if .DoesTableGenAuditLogsTable }}
-    if err == nil {
-        user := context_manager.GetUserContext(ctx)
-        var IDUser *int
-        if user != nil {
-            IDUser = &user.ID
-        }
-        insertLogQb := sq.Insert("`{{ $table }}_audit_log`").Columns(
-            `{{ $table }}_id`,
-            `audit_fk_user`,
-            `audit_action`,
-        ).Values(
-            {{ $short }}.{{ .PrimaryKey.Name }},
-            IDUser,
-            "delete",
-        )
-        if _, err = db.Exec(ctx, insertLogQb); err != nil {
-            return err
-        }
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+        return err
     }
-    {{ end }}
+    {{- end }}
+    {{- end }}
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 

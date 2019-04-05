@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_audit_log` (
         {{- if ne .Name $primaryKey.Name }}
         {{- if ne .Col.IsGenerated true }}
         {{- if ne .Col.IsVirtualFromConfig true }}
-    `{{ .Col.ColumnName }}` {{ upperCaseMysqlType .Col.RealDataType }}
+    `{{ .Col.ColumnName }}` {{ upperCaseMysqlType .Col.RealDataType }} {{- if .Col.NotNull }} NOT NULL {{- end -}}
         {{- .Col.GetMysqlDefaultStr -}},
         {{- end }}
         {{- end }}
