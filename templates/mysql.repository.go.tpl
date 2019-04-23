@@ -17,6 +17,9 @@ type I{{ .RepoName }} interface {
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
     Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
+    {{- if eq ( len .PrimaryKeyFields ) 1 }}
+    Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) error
+    {{- end }}
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
@@ -361,15 +364,57 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 
     // run query
     _, err = db.Exec(ctx, qb)
+    if err != nil {
+        return errors.Wrap(err, "error in {{ .RepoName }}")
+    }
     {{- if .HasActiveField }}
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
-        return err
+        return errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- end }}
     {{- end }}
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
+
+{{ if eq ( len .PrimaryKeyFields ) 1 }}
+func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) error {
+    var err error
+
+	var db = {{ $shortRepo }}.Db
+    tx := db_manager.GetTransactionContext(ctx)
+    if tx != nil {
+        db = tx
+    }
+
+    {{ if .HasActiveField }}
+    qb := sq.Update("`{{ $table }}`").Set("active", false)
+    {{ else }}
+    {{- if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+        return err
+    }
+    {{ end }}
+    qb := sq.Delete("`{{ $table }}`")
+    {{ end -}}
+
+    qb = qb.Where(sq.Eq{"`{{ colname $primaryKey.Col}}`": id})
+
+    // run query
+    _, err = db.Exec(ctx, qb)
+    if err != nil {
+        return errors.Wrap(err, "error in {{ .RepoName }}")
+    }
+    {{- if .HasActiveField }}
+    {{- if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, id, Delete); err != nil {
+        return errors.Wrap(err, "error in {{ .RepoName }}")
+    }
+    {{- end }}
+    {{- end }}
+    return errors.Wrap(err, "error in {{ .RepoName }}")
+}
+{{- end }}
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
     return {{ $shortRepo }}.QueryBuilder.FindAll{{ .Name }}BaseQuery(ctx, filter, fields)
