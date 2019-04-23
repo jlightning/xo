@@ -18,7 +18,7 @@ type I{{ .RepoName }} interface {
     {{- end }}
     Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
     {{- if eq ( len .PrimaryKeyFields ) 1 }}
-    Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) error
+    Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error)
     {{- end }}
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
@@ -378,7 +378,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 }
 
 {{ if eq ( len .PrimaryKeyFields ) 1 }}
-func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) error {
+func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error) {
     var err error
 
 	var db = {{ $shortRepo }}.Db
@@ -392,7 +392,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     {{ else }}
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
-        return err
+        return false, err
     }
     {{ end }}
     qb := sq.Delete("`{{ $table }}`")
@@ -403,16 +403,16 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     // run query
     _, err = db.Exec(ctx, qb)
     if err != nil {
-        return errors.Wrap(err, "error in {{ .RepoName }}")
+        return false, errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- if .HasActiveField }}
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, id, Delete); err != nil {
-        return errors.Wrap(err, "error in {{ .RepoName }}")
+        return false, errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- end }}
     {{- end }}
-    return errors.Wrap(err, "error in {{ .RepoName }}")
+    return err == nil, errors.Wrap(err, "error in {{ .RepoName }}")
 }
 {{- end }}
 
