@@ -4,9 +4,12 @@ package main
 //go:generate ./gen.sh models
 
 import (
+	"crypto/md5"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -291,17 +294,9 @@ func openDB(args *internal.ArgType) error {
 }
 
 // files is a map of filenames to open file handles.
-var files = map[string]*os.File{}
 
-// getFile builds the filepath from the TBuf information, and retrieves the
-// file from files. If the built filename is not already defined, then it calls
-// the os.OpenFile with the correct parameters depending on the state of args.
-func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
-	var f *os.File
-	var err error
-
-	oldArgPkg := args.Package
-
+func getFileName(args *internal.ArgType, t *internal.TBuf) (string, string) {
+	pkg := args.Package
 	// determine filename
 	var filename = strings.ToLower(snaker.CamelToSnake(t.Name))
 	if t.TemplateType == internal.SchemaGraphQLTemplate || t.TemplateType == internal.SchemaGraphQLEnumTemplate || t.TemplateType == internal.SchemaGraphQLScalarTemplate || t.TemplateType == internal.PaginationSchemaTemplate {
@@ -310,59 +305,44 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		filename += ".yml"
 	} else if t.TemplateType == internal.WireTemplate {
 		filename += ".go"
-	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType  == internal.AuditLogsMigrationTemplate {
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType == internal.AuditLogsMigrationTemplate {
 		filename += ".sql"
 	} else {
 		filename += args.Suffix
 	}
 	if t.TemplateType == internal.RepositoryTemplate || t.TemplateType == internal.IndexTemplate || t.TemplateType == internal.ForeignKeyTemplate || t.TemplateType == internal.RepositoryCommonTemplate {
-		args.Package = "repositories"
+		pkg = "repositories"
 		filename = "repositories/" + filename
 	} else if t.TemplateType == internal.SchemaGraphQLTemplate || t.TemplateType == internal.SchemaGraphQLEnumTemplate || t.TemplateType == internal.SchemaGraphQLScalarTemplate || t.TemplateType == internal.PaginationSchemaTemplate {
-		args.Package = "schema"
+		pkg = "schema"
 		filename = "graphql/schema/" + filename
 	} else if t.TemplateType == internal.GqlgenModelTemplate {
 		filename = "graphql/" + filename
 	} else if t.TemplateType == internal.WireTemplate {
-		args.Package = "main"
-	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType  == internal.AuditLogsMigrationTemplate{
+		pkg = "main"
+	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType == internal.AuditLogsMigrationTemplate {
 		filename = "migrations/" + filename
 	} else {
-		args.Package = "entities"
+		pkg = "entities"
 		filename = "entities/" + filename
 	}
 	if args.SingleFile {
 		filename = args.Filename
 	}
-	filename = path.Join(args.Path, filename)
+	return path.Join(args.Path, filename), pkg
+}
 
-	// lookup file
-	f, ok := files[filename]
-	if ok {
-		return f, nil
-	}
+// getFile builds the filepath from the TBuf information, and retrieves the
+// file from files. If the built filename is not already defined, then it calls
+// the os.OpenFile with the correct parameters depending on the state of args.
+func getFile(args *internal.ArgType, filename string, pkg string) (*os.File, error) {
+	var f *os.File
+	var err error
+
+	oldArgPkg := args.Package
 
 	// default open mode
 	mode := os.O_RDWR | os.O_CREATE | os.O_TRUNC
-
-	// stat file to determine if file already exists
-	fi, err := os.Stat(filename)
-	if err == nil {
-		if fi.IsDir() {
-			return nil, errors.New("filename cannot be directory")
-		} else if strings.HasSuffix(filename, "wire.go") {
-			fmt.Println("skip wire.go")
-			return nil, nil
-		}
-	} else if _, ok = err.(*os.PathError); !ok && args.Append && t.TemplateType != internal.XOTemplate {
-		// file exists so append if append is set and not XO type
-		mode = os.O_APPEND | os.O_WRONLY
-	}
-
-	// skip
-	if t.TemplateType == internal.XOTemplate && fi != nil {
-		return nil, nil
-	}
 
 	// open file
 	f, err = os.OpenFile(filename, mode, 0666)
@@ -370,39 +350,46 @@ func getFile(args *internal.ArgType, t *internal.TBuf) (*os.File, error) {
 		return nil, err
 	}
 
-	// file didn't originally exist, so add package header
-	if fi == nil || !args.Append {
-		// add build tags
-		if args.Tags != "" {
-			f.WriteString(`// +build ` + args.Tags + "\n\n")
-		}
+	args.Package = pkg
 
-		if strings.HasSuffix(filename, ".go") {
-			if strings.HasSuffix(filename, "wire.go") {
-				if _, err = f.WriteString("//+build wireinject\n\npackage main"); err != nil {
-					return nil, err
-				}
-			} else {
-				// execute
-				err = args.TemplateSet().Execute(f, "xo_package.go.tpl", args)
-				if err != nil {
-					return nil, err
-				}
+	// file didn't originally exist, so add package header
+	if args.Tags != "" {
+		f.WriteString(`// +build ` + args.Tags + "\n\n")
+	}
+
+	if strings.HasSuffix(filename, ".go") {
+		if strings.HasSuffix(filename, "wire.go") {
+			if _, err = f.WriteString("//+build wireinject\n\npackage main"); err != nil {
+				return nil, err
 			}
-		} else if strings.HasSuffix(filename, ".yml") {
-			err = args.TemplateSet().Execute(f, "gqlgen.yml.tpl", args)
+		} else {
+			// execute
+			err = args.TemplateSet().Execute(f, "xo_package.go.tpl", args)
 			if err != nil {
 				return nil, err
 			}
+		}
+	} else if strings.HasSuffix(filename, ".yml") {
+		err = args.TemplateSet().Execute(f, "gqlgen.yml.tpl", args)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	args.Package = oldArgPkg
 
-	// store file
-	files[filename] = f
-
 	return f, nil
+}
+
+func md5Sum(data string) string {
+	h := md5.New()
+	io.WriteString(h, data)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+type fileWrite struct {
+	data string
+	pkg  string
 }
 
 // writeTypes writes the generated definitions.
@@ -414,12 +401,15 @@ func writeTypes(args *internal.ArgType) error {
 	// sort segments
 	sort.Sort(out)
 
-	// loop, writing in order
-	for _, t := range out {
-		var f *os.File
+	fileWriteMap := make(map[string]fileWrite)
 
+	for _, t := range out {
 		// skip when in append and type is XO
 		if args.Append && t.TemplateType == internal.XOTemplate {
+			continue
+		}
+
+		if t.TemplateType == internal.WireTemplate {
 			continue
 		}
 
@@ -430,23 +420,62 @@ func writeTypes(args *internal.ArgType) error {
 		}
 
 		// get file and filename
-		f, err = getFile(args, &t)
+		filename, pkg := getFileName(args, &t)
+		fileWr := fileWriteMap[filename]
+		fileWr.pkg = pkg
+
+		if !args.Append || (t.TemplateType != internal.TypeTemplate && t.TemplateType != internal.QueryTypeTemplate) {
+			fileWr.data += t.Buf.String()
+		}
+
+		fileWriteMap[filename] = fileWr
+	}
+
+	if fileWr, ok := fileWriteMap[path.Join(args.Path, "graphql/gqlgen.yml")]; ok {
+		if fileWriteMap[path.Join(args.Path, "graphql/gqlgen.yml")], err = tryMergeGqlgenYml(args, fileWr); err != nil {
+			return err
+		}
+	} else {
+		return errors.New("gqlgen.yml not found")
+	}
+
+	cacheFile := path.Join(args.Path, "xo.cache")
+	jsonData, _ := ioutil.ReadFile(cacheFile)
+	fileHashes := make(map[string]string)
+	json.Unmarshal(jsonData, &fileHashes)
+
+	files := make(map[string]*os.File)
+
+	for filename, fileWr := range fileWriteMap {
+		hash := md5Sum(fileWr.data)
+		if fileHashes[filename] == hash {
+			continue
+		}
+
+		fmt.Println("update ", filename)
+
+		fileHashes[filename] = hash
+
+		f, err := getFile(args, filename, fileWr.pkg)
 		if err != nil {
 			return err
 		}
 
-		// should only be nil when type == xo
-		if f == nil {
-			continue
-		}
+		files[filename] = f
 
-		// write segment
-		if !args.Append || (t.TemplateType != internal.TypeTemplate && t.TemplateType != internal.QueryTypeTemplate) {
-			_, err = t.Buf.WriteTo(f)
-			if err != nil {
-				return err
-			}
+		_, err = io.WriteString(f, fileWr.data)
+		if err != nil {
+			return err
 		}
+	}
+
+	jsonData, err = json.Marshal(fileHashes)
+	if err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(cacheFile, jsonData, 0666); err != nil {
+		return err
 	}
 
 	// build goimports parameters, closing files
@@ -477,22 +506,16 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
-	err = tryMergeGqlgenYml(args)
-	if err != nil {
-		return err
-	}
-
 	// process written files with goimports
 	return exec.Command("goimports", params...).Run()
 }
 
-func tryMergeGqlgenYml(args *internal.ArgType) error {
+func tryMergeGqlgenYml(args *internal.ArgType, fileWr fileWrite) (fileWrite, error) {
 	importFile := args.Path + "/graphql/gqlgen_import.yml"
-	mainFile := args.Path + "/graphql/gqlgen.yml"
 	if _, err := os.Stat(importFile); err == nil {
 		data, err := ioutil.ReadFile(importFile)
 		if err != nil {
-			return err
+			return fileWrite{}, err
 		}
 		var value struct {
 			Models map[string]struct {
@@ -500,12 +523,6 @@ func tryMergeGqlgenYml(args *internal.ArgType) error {
 			}
 		}
 		err = yaml.Unmarshal(data, &value)
-
-		// open file
-		f, err := os.OpenFile(mainFile, os.O_APPEND|os.O_WRONLY, 0666)
-		if err != nil {
-			return err
-		}
 
 		var keys []string
 		for k := range value.Models {
@@ -515,11 +532,8 @@ func tryMergeGqlgenYml(args *internal.ArgType) error {
 		sort.Strings(keys)
 		for _, k := range keys {
 			v := value.Models[k]
-			_, err = f.WriteString(fmt.Sprintf("  %s:\n    model: %s\n", k, v.Model))
-			if err != nil {
-				return err
-			}
+			fileWr.data += fmt.Sprintf("  %s:\n    model: %s\n", k, v.Model)
 		}
 	}
-	return nil
+	return fileWr, nil
 }
