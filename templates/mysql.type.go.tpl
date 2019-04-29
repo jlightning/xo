@@ -83,6 +83,7 @@ func (f *{{ $typeName }}Filter) GroupBy(gb string) *{{ $typeName }}Filter {
     return f
 }
 
+// Deprecated: Need to consider when using
 func (f *{{ $typeName }}Filter) OrderBy(ob string) *{{ $typeName }}Filter {
     f.OrderBys = append(f.OrderBys, ob)
     return f
