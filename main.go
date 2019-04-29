@@ -454,7 +454,7 @@ func writeTypes(args *internal.ArgType) error {
 		return errors.New("gqlgen.yml not found")
 	}
 
-	cacheFile := path.Join(args.Path, "xo.cache")
+	cacheFile := path.Join(args.Path, "xo-lock.json")
 	jsonData, _ := ioutil.ReadFile(cacheFile)
 	fileHashes := make(map[string]string)
 	json.Unmarshal(jsonData, &fileHashes)
@@ -484,7 +484,7 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
-	jsonData, err = json.Marshal(fileHashes)
+	jsonData, err = json.MarshalIndent(fileHashes, "", "  ")
 	if err != nil {
 		return err
 	}
