@@ -4,8 +4,9 @@ package main
 //go:generate ./gen.sh models
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,9 +19,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/knq/snaker"
-
 	"github.com/alexflint/go-arg"
+	"github.com/knq/snaker"
 	"gopkg.in/yaml.v2"
 
 	"github.com/xo/dburl"
@@ -394,10 +394,11 @@ func getFile(args *internal.ArgType, filename string, pkg string) (*os.File, err
 	return f, nil
 }
 
-func md5Sum(data string) string {
-	h := md5.New()
+func hashString(data string) string {
+	h := sha1.New()
 	io.WriteString(h, data)
-	return fmt.Sprintf("%x", h.Sum(nil))
+	str := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	return "sha1-" + str
 }
 
 type fileWrite struct {
@@ -462,7 +463,7 @@ func writeTypes(args *internal.ArgType) error {
 	files := make(map[string]*os.File)
 
 	for filename, fileWr := range fileWriteMap {
-		hash := md5Sum(fileWr.data)
+		hash := hashString(fileWr.data)
 		if fileHashes[fileWr.filenameWithoutPath] == hash {
 			continue
 		}
