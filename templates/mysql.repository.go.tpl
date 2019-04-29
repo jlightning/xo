@@ -7,6 +7,7 @@
 // {{ .Comment }}
 {{- else -}}
 
+// I{{ .RepoName }} contains all the methods for CRUD of '{{ $table }}'
 type I{{ .RepoName }} interface {
     I{{ .RepoName }}QueryBuilder
     {{ if .PrimaryKey }}
@@ -34,12 +35,14 @@ type I{{ .RepoName }} interface {
     {{ end }}
 }
 
+// I{{ .RepoName }}QueryBuilder contains all the methods for query builder of '{{ $table }}'
 type I{{ .RepoName }}QueryBuilder interface {
     FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error)
     AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
 }
 
 {{ if .DoesTableGenApprovalTable }}
+// I{{ .RepoName }}QueryBuilder contains all the methods for approval flow of '{{ $table }}'
 type I{{ .Name }}CRRepository interface {
     Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) (bool, error)
     Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error)
@@ -48,8 +51,8 @@ type I{{ .Name }}CRRepository interface {
 }
 {{- end }}
 
-// {{ lowerfirst .RepoName }} represents a row from '{{ $table }}'.
 {{- end }}
+// {{ .RepoName }} is responsible for CRUD from / to '{{ $table }}'
 type {{ .RepoName }} struct {
     Db db_manager.IDb
     QueryBuilder I{{ .RepoName }}QueryBuilder
@@ -60,6 +63,7 @@ type {{ .RepoName }} struct {
     {{- end }}
 }
 
+// {{ .RepoName }}QueryBuilder is responsible for building the queries for '{{ $table }}'
 type {{ .RepoName }}QueryBuilder struct {
 }
 

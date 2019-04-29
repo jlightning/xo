@@ -1,8 +1,8 @@
 {{- $short := (shortname .Name "err" "res" "sqlstr" "db" "XOLog") -}}
 {{- $table := (schema .Schema .Table.TableName) -}}
-{{- $tableVar := .Table }}
-{{- $primaryKey := .PrimaryKey }}
-{{- $fkGroup := .ForeignKeyGroup }}
+{{- $tableVar := .Table -}}
+{{- $primaryKey := .PrimaryKey -}}
+{{- $fkGroup := .ForeignKeyGroup -}}
 type {{ .Name }} {
 {{- range .Fields }}
 {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
