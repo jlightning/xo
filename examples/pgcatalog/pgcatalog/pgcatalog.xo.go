@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/JLightning/xo/examples/pgcatalog/pgtypes"
+	"github.com/jlightning/xo/examples/pgcatalog/pgtypes"
 )
 
 // ASCII calls the stored procedure 'pg_catalog.ascii(text) integer' on db.

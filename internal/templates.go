@@ -11,7 +11,7 @@ import (
 
 	"github.com/knq/snaker"
 
-	templates "github.com/JLightning/xo/tplbin"
+	templates "github.com/jlightning/xo/tplbin"
 )
 
 var schemas []string = []string{"pagination"}

@@ -6,8 +6,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/JLightning/xo/internal"
-	"github.com/JLightning/xo/models"
+	"github.com/jlightning/xo/internal"
+	"github.com/jlightning/xo/models"
 )
 
 func init() {

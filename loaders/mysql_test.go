@@ -3,8 +3,8 @@ package loaders_test
 import (
 	"testing"
 
-	"github.com/JLightning/xo/internal"
-	"github.com/JLightning/xo/loaders"
+	"github.com/jlightning/xo/internal"
+	"github.com/jlightning/xo/loaders"
 )
 
 func Test_MyParseType(t *testing.T) {

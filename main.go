@@ -26,9 +26,9 @@ import (
 	"github.com/xo/dburl"
 	_ "github.com/xo/xoutil"
 
-	"github.com/JLightning/xo/internal"
-	_ "github.com/JLightning/xo/loaders"
-	"github.com/JLightning/xo/models"
+	"github.com/jlightning/xo/internal"
+	_ "github.com/jlightning/xo/loaders"
+	"github.com/jlightning/xo/models"
 )
 
 func main() {

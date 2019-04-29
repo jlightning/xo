@@ -10,8 +10,8 @@ import (
 
 	"github.com/knq/snaker"
 
-	"github.com/JLightning/xo/internal"
-	"github.com/JLightning/xo/models"
+	"github.com/jlightning/xo/internal"
+	"github.com/jlightning/xo/models"
 )
 
 func init() {

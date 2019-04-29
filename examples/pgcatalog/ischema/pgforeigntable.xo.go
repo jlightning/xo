@@ -6,7 +6,7 @@ package ischema
 import (
 	"database/sql"
 
-	"github.com/JLightning/xo/examples/pgcatalog/pgtypes"
+	"github.com/jlightning/xo/examples/pgcatalog/pgtypes"
 )
 
 // PgForeignTable represents a row from 'information_schema._pg_foreign_tables'.
