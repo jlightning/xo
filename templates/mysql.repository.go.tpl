@@ -1,5 +1,6 @@
 {{- $shortRepo := (shortname .RepoName "err" "res" "sqlstr" "db" "XOLog") -}}
 {{- $short := (shortname .Name "err" "res" "sqlstr" "db" "XOLog") -}}
+{{- $name := .Name }}
 {{- $table := (schema .Table.TableName) -}}
 {{- $primaryKey := .PrimaryKey }}
 {{- $type := . }}
@@ -603,11 +604,27 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         remarkNullStr = sql.NullString{Valid: true, String: *remark}
     }
 
+    {{ range .DraftFields }}
+        {{- if .IsEnum }}
+            activityLog{{ .FieldName }}, err := entities.{{ $name }}DraftActivityLog{{ .FieldName }}FromString(draft.{{ .FieldName }}.String())
+            if err != nil {
+                return false, err
+            }
+        {{- end }}
+    {{- end }}
+
     if _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
         FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusApproved,
         Remark: remarkNullStr,
+        {{- range .DraftFields }}
+            {{- if .IsEnum }}
+                {{ .FieldName }}: activityLog{{ .FieldName }},
+            {{- else }}
+                {{ .FieldName }}: draft.{{ .FieldName }},
+            {{- end }}
+        {{- end }}
     }); err != nil {
         return false, err
     }
@@ -718,11 +735,27 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
         return false, err
     }
 
+    {{ range .DraftFields }}
+        {{- if .IsEnum }}
+            activityLog{{ .FieldName }}, err := entities.{{ $name }}DraftActivityLog{{ .FieldName }}FromString(draft.{{ .FieldName }}.String())
+            if err != nil {
+                return false, err
+            }
+        {{- end }}
+    {{- end }}
+
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
         FkUser: fkApprover,
         Status: entities.{{ .Name }}DraftActivityLogStatusRejected,
         Remark: sql.NullString{Valid: true, String: remark},
+        {{- range .DraftFields }}
+            {{- if .IsEnum }}
+                {{ .FieldName }}: activityLog{{ .FieldName }},
+            {{- else }}
+                {{ .FieldName }}: draft.{{ .FieldName }},
+            {{- end }}
+        {{- end }}
     })
     return err == nil, err
 }
@@ -757,11 +790,27 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
         return false, err
     }
 
+    {{ range .DraftFields }}
+        {{- if .IsEnum }}
+            activityLog{{ .FieldName }}, err := entities.{{ $name }}DraftActivityLog{{ .FieldName }}FromString(draft.{{ .FieldName }}.String())
+            if err != nil {
+                return false, err
+            }
+        {{- end }}
+    {{- end }}
+
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
         FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusCancelled,
         Remark: sql.NullString{Valid: true, String: remark},
+        {{- range .DraftFields }}
+            {{- if .IsEnum }}
+                {{ .FieldName }}: activityLog{{ .FieldName }},
+            {{- else }}
+                {{ .FieldName }}: draft.{{ .FieldName }},
+            {{- end }}
+        {{- end }}
     })
     return err == nil, err
 }
@@ -800,11 +849,27 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Cont
         return false, err
     }
 
+    {{ range .DraftFields }}
+        {{- if .IsEnum }}
+            activityLog{{ .FieldName }}, err := entities.{{ $name }}DraftActivityLog{{ .FieldName }}FromString(draft.{{ .FieldName }}.String())
+            if err != nil {
+                return false, err
+            }
+        {{- end }}
+    {{- end }}
+
     _, err = {{ $shortRepo }}.{{ .Name }}DraftActivityLogRepository.Insert{{ .Name }}DraftActivityLog(ctx, entities.{{ .Name }}DraftActivityLogCreate{
         FkDraft: IDDraft,
         FkUser: fkUser,
         Status: entities.{{ .Name }}DraftActivityLogStatusPending,
         Remark: remarkNullStr,
+        {{- range .DraftFields }}
+            {{- if .IsEnum }}
+                {{ .FieldName }}: activityLog{{ .FieldName }},
+            {{- else }}
+                {{ .FieldName }}: draft.{{ .FieldName }},
+            {{- end }}
+        {{- end }}
     })
     return err == nil, err
 }

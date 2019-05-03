@@ -2,6 +2,10 @@ gen_approval_table:
   teacher:
     update_on_duplicate: true
     include_inactive_on_move: true
+    add_field_to_draft:
+      - column_name: test_test
+        field_name: TestTest
+        data_type: ENUM("a", "b")
 gen_audit_logs_table:
   teacher:
 custom_field:

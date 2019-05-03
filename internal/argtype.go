@@ -2,6 +2,9 @@ package internal
 
 import (
 	"database/sql"
+	"strings"
+
+	"github.com/knq/snaker"
 )
 
 // ArgType is the type that specifies the command line arguments.
@@ -156,11 +159,28 @@ type ArgType struct {
 	ShortNameTypeMap map[string]string `arg:"-"`
 }
 
+type approvalTableDraftField struct {
+	ColumnName string `yaml:"column_name"`
+	DataType   string `yaml:"data_type"`
+	Nullable   bool   `yaml:"nullable"`
+}
+
+func (a *approvalTableDraftField) IsEnum() bool {
+	return strings.HasPrefix(strings.ToLower(a.DataType), "enum")
+}
+
+func (a *approvalTableDraftField) FieldName() string {
+	return snaker.SnakeToCamelIdentifier(a.ColumnName)
+}
+
+type approvalTable struct {
+	UpdateOnDuplicate     bool                      `yaml:"update_on_duplicate"`
+	IncludeInactiveOnMove bool                      `yaml:"include_inactive_on_move"`
+	DraftFields           []approvalTableDraftField `yaml:"add_field_to_draft"`
+}
+
 type xoConfigType struct {
-	GenApprovalTable map[string]struct {
-		UpdateOnDuplicate   bool `yaml:"update_on_duplicate"`
-		IncludeInactiveOnMove bool `yaml:"include_inactive_on_move"`
-	} `yaml:"gen_approval_table"`
+	GenApprovalTable  map[string]approvalTable `yaml:"gen_approval_table"`
 	GenAuditLogsTable map[string]struct {
 	} `yaml:"gen_audit_logs_table"`
 	ExcludeTable []string `yaml:"exclude_table"`
@@ -201,8 +221,12 @@ func (xc *xoConfigType) DoesTableGenApprovalTable(tableName string) bool {
 	return false
 }
 
+func (xc *xoConfigType) GetApprovalTableAdditionalFields(tableName string) []approvalTableDraftField {
+	return xc.GenApprovalTable[tableName].DraftFields
+}
+
 func (xc *xoConfigType) DoesTableGenAuditLogs(tableName string) bool {
-	if _,ok:=xc.GenAuditLogsTable[tableName]; ok {
+	if _, ok := xc.GenAuditLogsTable[tableName]; ok {
 		return true
 	}
 	return false

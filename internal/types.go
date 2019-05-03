@@ -179,6 +179,10 @@ func (t *Type) DoesTableGenApprovalTable() bool {
 	return XoConfig.DoesTableGenApprovalTable(t.Table.TableName)
 }
 
+func (t *Type) DraftFields() []approvalTableDraftField {
+	return XoConfig.GetApprovalTableAdditionalFields(t.Table.TableName)
+}
+
 func (t *Type) DoesTableGenAuditLogsTable() bool {
 	return XoConfig.DoesTableGenAuditLogs(t.Table.TableName)
 }

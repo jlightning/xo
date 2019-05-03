@@ -73,3 +73,9 @@ func ({{ $short }} *{{ $type }}) Scan(src interface{}) error {
 	return {{ $short }}.UnmarshalText(buf)
 }
 
+func {{ $type }}FromString(str string) ({{ $type }}, error) {
+    var {{ $short }} {{ $type }}
+    err := {{ $short }}.UnmarshalText([]byte(str))
+    return {{ $short }}, err
+}
+
