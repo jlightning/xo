@@ -20,7 +20,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
         return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
     {{- range $k, $v := .Fields }}
-        qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
+        qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
 
 	// run query
@@ -45,7 +45,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 	{{- range $k, $v := .Fields }}
-	    qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
+	    qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
 	if qb, err = {{$shortRepo}}.AddPagination(ctx, qb, pagination); err != nil {
 	    return list, err
@@ -69,7 +69,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
         qb = sq.Select("COUNT(1) AS count").FromSelect(qb, "a")
     }
     {{- range $k, $v := .Fields }}
-        qb = qb.Where(sq.Eq{"`{{ colname .Col }}`": {{ goparam $v }}})
+        qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
     if err = db.Get(ctx, &listMeta, qb); err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")

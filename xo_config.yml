@@ -27,4 +27,4 @@ graphql:
   exclude_field:
     teacher:
       - column_name: fk_class
-        exclude_in_filter: false
+          exclude_in_filter: false
