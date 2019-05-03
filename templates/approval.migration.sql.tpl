@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft` (
     `status` ENUM('draft', 'pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'draft',
     `label` VARCHAR(255),
     {{- range .DraftFields }}
-    `{{ .ColumnName }}` {{ .DataType }} {{- if .Nullable -}} NULL {{- end -}}
+    `{{ .ColumnName }}` {{ .DataType }} {{- if .Nullable -}} NULL {{- end -}},
     {{- end }}
     `active` BOOLEAN NOT NULL DEFAULT true,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_activity_log` (
     `fk_draft` INT NOT NULL,
     `status` ENUM('draft', 'pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'draft',
     {{- range .DraftFields }}
-    `{{ .ColumnName }}` {{ .DataType }} {{- if .Nullable -}} NULL {{- end -}}
+    `{{ .ColumnName }}` {{ .DataType }} {{- if .Nullable -}} NULL {{- end -}},
     {{- end }}
     `remark` VARCHAR(255),
     `active` BOOLEAN NOT NULL DEFAULT true,
