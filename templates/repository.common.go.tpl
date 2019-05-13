@@ -1,50 +1,72 @@
 type AuditLogAction string
 
 const (
-    Insert AuditLogAction = "insert"
-    Update = "update"
-    Delete = "delete"
+	Insert AuditLogAction = "insert"
+	Update                = "update"
+	Delete                = "delete"
 )
 
-func addFilter(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
-    for _, filterList := range filterOnField {
-        for filterType, v := range filterList {
-            switch filterType {
-            case entities.Eq:
-                qb = qb.Where(sq.Eq{columnName: v})
-            case entities.Neq:
-                qb = qb.Where(sq.NotEq{columnName: v})
-            case entities.Gt:
-                qb = qb.Where(sq.Gt{columnName: v})
-            case entities.Gte:
-                qb = qb.Where(sq.GtOrEq{columnName: v})
-            case entities.Lt:
-                qb = qb.Where(sq.Lt{columnName: v})
-            case entities.Lte:
-                qb = qb.Where(sq.LtOrEq{columnName: v})
-            case entities.Like:
-                qb = qb.Where(columnName + " LIKE ?", v)
-            case entities.Between:
-                if arrv, ok := v.([]interface{}); ok && len(arrv) == 2 {
-                    qb = qb.Where(columnName + " BETWEEN ? AND ?", arrv...)
-                }
-            case entities.Raw:
-                if sqlizer, ok := v.(sq.Sqlizer); ok {
-                    query, args, err := sqlizer.ToSql()
-                    if err != nil {
-                        return qb, err
-                    }
-                    qb.Where("("+columnName+" "+query+")", args...)
-                } else {
-                    qb.Where("(" + columnName + " " + fmt.Sprint(v) + ")")
-                }
-            }
-        }
-    }
-    return qb, nil
+func AddFilterToQb(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
+    return addFilter(qb, columnName, filterOnField)
 }
 
-func addPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error){
+func addFilter(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
+	sqlizer, err := FilterOnFieldToSqlizer(columnName, filterOnField)
+	if err != nil {
+		return nil, err
+	}
+	if sqlizer != nil {
+		qb.Where(sqlizer)
+	}
+	return qb, nil
+}
+
+func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnField) (sq.Sqlizer, error) {
+	var combined sq.And
+	for _, filterList := range filterOnField {
+		for filterType, v := range filterList {
+			switch filterType {
+			case entities.Eq:
+				combined = append(combined, sq.Eq{columnName: v})
+			case entities.Neq:
+				combined = append(combined, sq.NotEq{columnName: v})
+			case entities.Gt:
+				combined = append(combined, sq.Gt{columnName: v})
+			case entities.Gte:
+				combined = append(combined, sq.GtOrEq{columnName: v})
+			case entities.Lt:
+				combined = append(combined, sq.Lt{columnName: v})
+			case entities.Lte:
+				combined = append(combined, sq.LtOrEq{columnName: v})
+			case entities.Like:
+				combined = append(combined, sq.Expr(columnName+" LIKE ?", v))
+			case entities.Between:
+				if arrv, ok := v.([]interface{}); ok && len(arrv) == 2 {
+					combined = append(combined, sq.Expr(columnName+" BETWEEN ? AND ?", arrv...))
+				} else {
+					return nil, errors.New("invalid between filter")
+				}
+			case entities.Raw:
+				if sqlizer, ok := v.(sq.Sqlizer); ok {
+					query, args, err := sqlizer.ToSql()
+					if err != nil {
+						return nil, err
+					}
+					combined = append(combined, sq.Expr("("+columnName+" "+query+")", args...))
+				} else {
+					combined = append(combined, sq.Expr("("+columnName+" "+fmt.Sprint(v)+")"))
+				}
+			}
+		}
+	}
+	// return nil interface when underlying type is nil
+	if combined == nil {
+		return nil, nil
+	}
+	return combined, nil
+}
+
+func addPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error) {
 	if pagination != nil {
 		if pagination.Page != nil && pagination.PerPage != nil {
 			offset := uint64((*pagination.Page - 1) * *pagination.PerPage)
