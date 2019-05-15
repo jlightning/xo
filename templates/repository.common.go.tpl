@@ -6,6 +6,11 @@ const (
 	Delete                = "delete"
 )
 
+type IRegistry interface {
+	PutRegistryContext(ctx context.Context, key string, value interface{}) error
+	GetRegistryValue(ctx context.Context, key string) (interface{}, error)
+}
+
 func AddFilterToQb(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
     return addFilter(qb, columnName, filterOnField)
 }
