@@ -1,5 +1,5 @@
 {{- $short := (shortname .Name "err" "res" "sqlstr" "db" "XOLog") -}}
-{{- $table := (schema .Schema .Table.TableName) -}}
+{{- $table := (schema .Table.TableName) -}}
 {{- $tableVar := .Table -}}
 {{- $primaryKey := .PrimaryKey -}}
 {{- $fkGroup := .ForeignKeyGroup -}}
@@ -16,16 +16,16 @@ type {{ .Name }} {
 
 {{- range $fkGroup.ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}{{- if .Field.Col.NotNull}}!{{- end }} @filterModifier(module: "{{ .RefType.Table.TableName }}")
+    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}{{- if .Field.Col.NotNull}}!{{- end }} @filterModifier(from: "{{ $table }}")
 {{- end }}
 {{- end }}
 
 {{- range $fkGroup.OneToManyKeys }}
 {{- if ne .RevertCallFuncName "" }}
     {{- if .IsUnique }}
-    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }} @filterModifier(module: "{{ .Type.Table.TableName }}")
+    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }} @filterModifier(from: "{{ $table }}")
     {{- else }}
-    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter, pagination: Pagination): List{{ .Type.Name }}! @filterModifier(module: "{{ .Type.Table.TableName }}")
+    {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter, pagination: Pagination): List{{ .Type.Name }}! @filterModifier(from: "{{ $table }}")
     {{- end }}
 {{- end }}
 {{- end }}

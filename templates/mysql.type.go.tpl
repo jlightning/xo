@@ -46,6 +46,10 @@ func (f *{{ $typeName }}Filter) TableName() string {
     return "`{{ $table }}`"
 }
 
+func (f *{{ $typeName }}Filter) ModuleName() string {
+    return "{{ $table }}"
+}
+
 func (f *{{ $typeName}}Filter) IsNil() bool {
     return f == nil
 }
