@@ -8,12 +8,6 @@
 func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter) (entities.{{ .Type.Name }}, error) {
 	var err error
 
-	var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
-
 	// sql query
     qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
     if err != nil {
@@ -25,7 +19,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
 
 	// run query
 	{{ $short }} := entities.{{ .Type.Name }}{}
-	err = db.Get(ctx, &{{ $short }}, qb)
+	err = {{ $shortRepo }}.Db.Get(ctx, &{{ $short }}, qb)
     if err != nil {
         return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
@@ -33,12 +27,6 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
 }
 {{- else }}
 func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Type.Name }}, err error) {
-	var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
-
 	// sql query
 	qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
 	if err != nil {
@@ -52,7 +40,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
 	}
 
 	// run query
-    if err = db.Select(ctx, &list.Data, qb); err != nil {
+    if err = {{ $shortRepo }}.Db.Select(ctx, &list.Data, qb); err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 
@@ -71,7 +59,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
-    if err = db.Get(ctx, &listMeta, qb); err != nil {
+    if err = {{ $shortRepo }}.Db.Get(ctx, &listMeta, qb); err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
 

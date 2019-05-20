@@ -86,12 +86,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error) {
 	var err error
 
-	var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
-
 {{ if .Table.ManualPk  }}
 	// sql insert query, primary key must be provided
 	qb := sq.Insert("`{{ $table }}`").Columns(
@@ -116,7 +110,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
     }
 
 	// run query
-	res, err := db.Exec(ctx, qb)
+	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
 		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
@@ -145,7 +139,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
     }
 
 	// run query
-	res, err := db.Exec(ctx, qb)
+	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
 		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
@@ -165,19 +159,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 
 	new{{ $short }} := entities.{{ .Name }}{}
 
-	err = db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
 
 	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
 {{ if .DoesTableGenAuditLogsTable }}
 func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id int, action AuditLogAction) error {
-	var db = {{ $shortRepo }}.Db
-	tx := db_manager.GetTransactionContext(ctx)
-	if tx != nil {
-		db = tx
-	}
-
 	user := context_manager.GetUserContext(ctx)
     IDUserSelect := "NULL AS `audit_fk_user`"
     if user != nil {
@@ -204,7 +192,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
         {{- end }}
     ).Select(selectForInsertQb)
 
-	_, err := db.Exec(ctx, qb)
+	_, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	return err
 }
 {{ end }}
@@ -213,12 +201,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 	// Update updates the {{ .Name }}Create in the database.
 	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error) {
 		var err error
-
-		var db = {{ $shortRepo }}.Db
-        tx := db_manager.GetTransactionContext(ctx)
-        if tx != nil {
-            db = tx
-        }
 
         updateMap := map[string]interface{}{}
         {{- range .Fields }}
@@ -242,7 +224,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 		{{- end }}
 
         // run query
-        _, err = db.Exec(ctx, qb)
+        _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
         if err != nil {
             return nil, errors.Wrap(err, "error in {{ .RepoName }}")
         }
@@ -259,7 +241,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
         {{- end }}
 
         result := entities.{{ .Name }}{}
-        err = db.Get(ctx, &result, selectQb)
+        err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
 
         {{- if .DoesTableGenAuditLogsTable }}
         if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $primaryKey.Name }}, Update); err != nil {
@@ -272,12 +254,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
     // Update updates the {{ .Name }} in the database.
 	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error) {
     		var err error
-
-    		var db = {{ $shortRepo }}.Db
-            tx := db_manager.GetTransactionContext(ctx)
-            if tx != nil {
-                db = tx
-            }
 
     		{{ if gt ( len .PrimaryKeyFields ) 1 }}
     			// sql query with composite primary key
@@ -306,7 +282,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
     		{{- end }}
 
             // run query
-            _, err = db.Exec(ctx, qb)
+            _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
             if err != nil {
                 return nil, errors.Wrap(err, "error in {{ .RepoName }}")
             }
@@ -323,7 +299,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
             {{- end }}
 
             result := entities.{{ .Name }}{}
-            err = db.Get(ctx, &result, selectQb)
+            err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
 
             {{- if .DoesTableGenAuditLogsTable }}
             if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Update); err != nil {
@@ -339,12 +315,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 // Delete deletes the {{ .Name }} from the database.
 func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error {
 	var err error
-
-	var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
 
     {{ if .HasActiveField }}
     qb := sq.Update("`{{ $table }}`").Set("active", false)
@@ -368,7 +338,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 	{{- end }}
 
     // run query
-    _, err = db.Exec(ctx, qb)
+    _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
     if err != nil {
         return errors.Wrap(err, "error in {{ .RepoName }}")
     }
@@ -386,12 +356,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
 func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error) {
     var err error
 
-	var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
-
     {{ if .HasActiveField }}
     qb := sq.Update("`{{ $table }}`").Set("active", false)
     {{ else }}
@@ -406,7 +370,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     qb = qb.Where(sq.Eq{"`{{ colname $primaryKey.Col}}`": id})
 
     // run query
-    _, err = db.Exec(ctx, qb)
+    _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
     if err != nil {
         return false, errors.Wrap(err, "error in {{ .RepoName }}")
     }
@@ -527,12 +491,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) AddPagination(ctx context.C
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Name }}, err error) {
-    var db = {{ $shortRepo }}.Db
-    tx := db_manager.GetTransactionContext(ctx)
-    if tx != nil {
-        db = tx
-    }
-
     qb, err := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
     if err != nil {
         return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
@@ -542,7 +500,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
         return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
     }
 
-    err = db.Select(ctx, &list.Data, qb)
+    err = {{ $shortRepo }}.Db.Select(ctx, &list.Data, qb)
 
     if err != nil {
         return list, errors.Wrap(err, "error in {{ .RepoName }}")
@@ -560,7 +518,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
     if filter != nil && len(filter.GroupBys) > 0 {
         qb = sq.Select("COUNT(1) AS count").FromSelect(qb, "a")
     }
-    err = db.Get(ctx, &listMeta, qb)
+    err = {{ $shortRepo }}.Db.Get(ctx, &listMeta, qb)
 
     list.TotalCount = listMeta.Count
 
