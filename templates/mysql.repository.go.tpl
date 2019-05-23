@@ -23,11 +23,14 @@ type I{{ .RepoName }} interface {
     Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error)
     {{- end }}
     FindAll{{ .Name }}(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Name }}, error)
+    FindAll{{ .Name }}WithSuffix(ctx context.Context, {{$short}}Filter *entities.{{ .Name }}Filter, pagination *entities.Pagination, suffixes ...sq.Sqlizer) (entities.List{{ .Name }}, error)
     {{- range .Indexes }}
         {{- if .Index.IsUnique }}
         {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter) (entities.{{ .Type.Name }}, error)
+        {{ .FuncName }}WithSuffix(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, suffixes ...sq.Sqlizer) (entities.{{ .Type.Name }}, error)
         {{- else }}
         {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination) (entities.List{{ .Type.Name }}, error)
+        {{ .FuncName }}WithSuffix(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination, suffixes ...sq.Sqlizer) (entities.List{{ .Type.Name }}, error)
         {{- end  }}
         {{- end }}
     {{- end }}
@@ -38,7 +41,7 @@ type I{{ .RepoName }} interface {
 
 // I{{ .RepoName }}QueryBuilder contains all the methods for query builder of '{{ $table }}'
 type I{{ .RepoName }}QueryBuilder interface {
-    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error)
+    FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string, suffixes ...sq.Sqlizer) (*sq.SelectBuilder, error)
     AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error)
 }
 
@@ -385,11 +388,11 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
 }
 {{- end }}
 
-func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
-    return {{ $shortRepo }}.QueryBuilder.FindAll{{ .Name }}BaseQuery(ctx, filter, fields)
+func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string, suffixes ...sq.Sqlizer) (*sq.SelectBuilder, error) {
+    return {{ $shortRepo }}.QueryBuilder.FindAll{{ .Name }}BaseQuery(ctx, filter, fields, suffixes...)
 }
 
-func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string) (*sq.SelectBuilder, error) {
+func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery(ctx context.Context, filter *entities.{{ .Name }}Filter, fields string, suffixes ...sq.Sqlizer) (*sq.SelectBuilder, error) {
     var err error
     qb := sq.Select(fields).From("`{{ $table }}`")
     if filter != nil {
@@ -467,6 +470,14 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery
         {{- end }}
     }
 
+    for _, suffix := range suffixes {
+        query, args, err := suffix.ToSql()
+        if err != nil {
+            return qb, err
+        }
+        qb.Suffix(query, args...)
+    }
+
     return qb, nil
 }
 
@@ -491,7 +502,11 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) AddPagination(ctx context.C
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Name }}, err error) {
-    qb, err := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+    return {{ $shortRepo }}.FindAll{{ .Name }}WithSuffix(ctx, filter, pagination)
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}WithSuffix(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination, suffixes ...sq.Sqlizer) (list entities.List{{ .Name }}, err error) {
+    qb, err := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
     if err != nil {
         return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
     }

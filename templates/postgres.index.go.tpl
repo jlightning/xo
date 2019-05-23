@@ -6,10 +6,14 @@
 // Generated from index '{{ .Index.IndexName }}'.
 {{- if .Index.IsUnique }}
 func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter) (entities.{{ .Type.Name }}, error) {
+    return {{$shortRepo}}.{{ .FuncName }}WithSuffix(ctx, {{ goparamlist .Fields false false }}, filter)
+}
+
+func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, suffixes ...sq.Sqlizer) (entities.{{ .Type.Name }}, error) {
 	var err error
 
 	// sql query
-    qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+    qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
     if err != nil {
         return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
@@ -27,8 +31,12 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context,
 }
 {{- else }}
 func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Type.Name }}, err error) {
+    return {{$shortRepo}}.{{ .FuncName }}WithSuffix(ctx, {{ goparamlist .Fields false false }}, filter, pagination)
+}
+
+func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx context.Context, {{ goparamlist .Fields false true }}, filter *entities.{{ .Type.Name }}Filter, pagination *entities.Pagination, suffixes ...sq.Sqlizer) (list entities.List{{ .Type.Name }}, err error) {
 	// sql query
-	qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*")
+	qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
 	if err != nil {
         return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
     }
