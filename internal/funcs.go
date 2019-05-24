@@ -127,6 +127,8 @@ func (a *ArgType) retypegraphql(typ string) string {
 	switch typ {
 	case "int":
 		fallthrough
+	case "uint":
+		fallthrough
 	case "int64":
 		typ = "Int"
 	case "string":

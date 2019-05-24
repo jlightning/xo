@@ -259,7 +259,7 @@ switchDT:
 	// add 'u' as prefix to type if its unsigned
 	// FIXME: this needs to be tested properly...
 	if unsigned && internal.IntRE.MatchString(typ) {
-		typ = "u" + typ
+		//typ = "u" + typ
 	}
 
 	return precision, nilVal, typ
