@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/gedex/inflector"
 	"github.com/knq/snaker"
 
 	"github.com/jlightning/xo/models"
@@ -53,6 +54,7 @@ func (a *ArgType) NewTemplateFuncs() template.FuncMap {
 		"convertToNonNull":   a.convertToNonNull,
 		"convertToNull":      a.convertToNull,
 		"upperCaseMysqlType": a.upperCaseMysqlType,
+		"plural": a.plural,
 	}
 }
 
@@ -165,6 +167,10 @@ func (a *ArgType) retypeNull(typ string) string {
 		r = "*" + r
 	}
 	return r
+}
+
+func (a *ArgType) plural(name string) string {
+	return inflector.Pluralize(name)
 }
 
 // reniltype checks typ against known nil types (similar to retype), prefixing

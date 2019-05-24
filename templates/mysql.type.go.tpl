@@ -2,6 +2,7 @@
 {{- $table := (schema .Table.TableName) -}}
 {{- $tableVar := .Table }}
 {{- $primaryKey := .PrimaryKey }}
+{{- $name := .Name }}
 {{- if .Comment -}}
 // {{ .Comment }}
 {{- else -}}
@@ -214,6 +215,28 @@ type List{{ .Name }} struct {
     TotalCount int
     Data []{{ .Name }}
 }
+
+{{- range .Fields }}
+    {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
+        {{- if and .Col.IsEnum (ne .Col.NotNull true) }}
+            func (l *List{{ $name }}) GetAll{{ .Name }}() []*{{ retype .Type }} {
+                var res []*{{ retype .Type }}
+                for _, item := range l.Data {
+                    res = append(res, item.{{ .Name }})
+                }
+                return res
+            }
+        {{- else }}
+             func (l *List{{ $name }}) GetAll{{ .Name }}() []{{ retype .Type }} {
+                 var res []{{ retype .Type }}
+                 for _, item := range l.Data {
+                     res = append(res, item.{{ .Name }})
+                 }
+                 return res
+             }
+        {{- end }}
+    {{- end }}
+{{- end }}
 
 func (l *List{{ .Name }}) GetInterfaceItems() []interface{} {
     var arr []interface{}
