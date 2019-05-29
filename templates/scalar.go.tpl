@@ -129,7 +129,7 @@ func UnmarshalNullBool(v interface{}) (sql.NullBool, error) {
 func MarshalNullBool(v sql.NullBool) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		if v.Valid {
-			io.WriteString(w, fmt.Sprint(v))
+			io.WriteString(w, fmt.Sprint(v.Bool))
 		} else {
 			io.WriteString(w, "null")
 		}
