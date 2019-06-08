@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# run after changing any template file
+
 go-bindata \
   -pkg tplbin \
   -prefix templates/ \
