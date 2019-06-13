@@ -62,6 +62,9 @@ func addPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFi
 			offset := uint64((*pagination.Page - 1) * *pagination.PerPage)
 			qb = qb.Offset(offset).Limit(uint64(*pagination.PerPage))
 		}
+		if pagination.CustomSort != nil {
+            qb = qb.OrderBy(pagination.CustomSort...)
+        }
 		if pagination.Sort != nil {
 			var orderStrs []string
 			for _, field := range pagination.Sort {
@@ -71,10 +74,7 @@ func addPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFi
 					return qb, errors.New("doesnt allow sorting on field `" + field + "` not found")
 				}
 			}
-			orderBy := strings.Join(orderStrs, ", ")
-			if orderBy != "" {
-				qb = qb.OrderBy(strings.Join(orderStrs, ", "))
-			}
+			qb = qb.OrderBy(orderStrs...)
 		}
 	}
 	return qb, nil

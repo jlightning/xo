@@ -30,7 +30,6 @@ type {{ .Name }}Filter struct {
     Joins []sq.Sqlizer
     LeftJoins []sq.Sqlizer
     GroupBys []string
-    OrderBys []string
     Havings []sq.Sqlizer
 }
 
@@ -85,12 +84,6 @@ func (f *{{ $typeName }}Filter) LeftJoin(j sq.Sqlizer) *{{ $typeName }}Filter {
 
 func (f *{{ $typeName }}Filter) GroupBy(gb string) *{{ $typeName }}Filter {
     f.GroupBys = append(f.GroupBys, gb)
-    return f
-}
-
-// Deprecated: Need to consider when using
-func (f *{{ $typeName }}Filter) OrderBy(ob string) *{{ $typeName }}Filter {
-    f.OrderBys = append(f.OrderBys, ob)
     return f
 }
 
@@ -158,11 +151,6 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
         if _, err = io.WriteString(h, "groupBy -> "+fmt.Sprintf("%v", f.GroupBys)); err != nil {
              return "", err
          }
-    }
-    if f.OrderBys != nil {
-        if _, err = io.WriteString(h, "orderBy -> "+fmt.Sprintf("%v", f.OrderBys)); err != nil {
-            return "", err
-        }
     }
     if f.Havings != nil {
          for _, item := range f.Havings {

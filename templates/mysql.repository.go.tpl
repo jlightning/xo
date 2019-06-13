@@ -446,9 +446,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery
         if filter.GroupBys != nil {
             qb = qb.GroupBy(filter.GroupBys...)
         }
-        if filter.OrderBys != nil {
-            qb.OrderBy(filter.OrderBys...)
-        }
         if filter.Havings != nil {
             for _, item := range filter.Havings {
                 query, args, err := item.ToSql()
