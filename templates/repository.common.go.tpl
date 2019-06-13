@@ -46,17 +46,7 @@ func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnFi
 				} else {
 					return nil, errors.New("invalid between filter")
 				}
-			case entities.Raw:
-				if sqlizer, ok := v.(sq.Sqlizer); ok {
-					query, args, err := sqlizer.ToSql()
-					if err != nil {
-						return nil, err
-					}
-					combined = append(combined, sq.Expr("("+columnName+" "+query+")", args...))
-				} else {
-					combined = append(combined, sq.Expr("("+columnName+" "+fmt.Sprint(v)+")"))
-				}
-			}
+            }
 		}
 	}
 	// return nil interface when underlying type is nil

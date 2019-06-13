@@ -211,29 +211,20 @@ const (
 	Lte             = "lte"
 	Like            = "like"
 	Between         = "between"
-	Raw             = "raw"
 )
 
 type FilterOnField []map[FilterType]interface{}
 
+// TODO: optimize
 func (f *FilterOnField) UnmarshalGQL(v interface{}) error {
 	var err error
 	vjson, _ := json.Marshal(v)
-	err = json.Unmarshal(vjson, f)
-	if err == nil {
-	    for _, filter:= range *f {
-            if _, ok := filter[Raw]; ok {
-                return errors.New("raw filter is not supported")
-            }
-	    }
-		return nil
-	}
+	if json.Unmarshal(vjson, f) == nil {
+        return nil
+    }
 	singleMap := map[FilterType]interface{}{}
 	err = json.Unmarshal(vjson, singleMap)
 	if err == nil {
-	    if _, ok := singleMap[Raw]; ok {
-            return errors.New("raw filter is not supported")
-        }
         *f = []map[FilterType]interface{}{
             singleMap,
         }
@@ -260,7 +251,7 @@ func (f *FilterOnField) Hash() (string, error) {
 	}
 	var arr []string
 	for _, _f := range *f {
-		filterTypes := []FilterType{Eq, Neq, Gt, Gte, Lt, Lte, Like, Between, Raw}
+		filterTypes := []FilterType{Eq, Neq, Gt, Gte, Lt, Lte, Like, Between}
 
 		for _, ft := range filterTypes {
 			value := _f[ft]
