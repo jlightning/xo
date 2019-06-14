@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_activity_log` (
 CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `fk_draft` INT NOT NULL,
+    `fk_{{ .Table.TableName}}` INT,
     {{- range .Fields }}
         {{- if ne .Name $primaryKey.Name }}
         {{- if ne .Col.IsGenerated true }}
@@ -56,5 +57,6 @@ CREATE TABLE IF NOT EXISTS `{{ .Table.TableName}}_draft_item` (
     {{- range .ForeignKeyGroup.ManyToOneKeys }}
     FOREIGN KEY (`{{ .Field.Col.ColumnName }}`) REFERENCES `{{ .RefType.Table.TableName }}`(`{{ .RefField.Col.ColumnName }}`),
     {{- end }}
-    FOREIGN KEY (`fk_draft`) REFERENCES `{{ .Table.TableName}}_draft`(`id`) ON DELETE NO ACTION
+    FOREIGN KEY (`fk_draft`) REFERENCES `{{ .Table.TableName}}_draft`(`id`) ON DELETE NO ACTION,
+    FOREIGN KEY (`fk_{{ .Table.TableName}}`) REFERENCES `{{ .Table.TableName}}`(`id`) ON DELETE NO ACTION
 ) ENGINE=INNODB;

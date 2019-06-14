@@ -555,7 +555,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
     }
 
     // TODO: lock row
-    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByIDWithSuffix(ctx, IDDraft, nil, consts.SqlForUpdate)
     if err != nil {
         return false, err
     }
@@ -599,12 +599,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         return false, err
     }
 
-    draftItems, err := {{ $shortRepo }}.{{ .Name }}DraftItemRepository.FindAll{{ .Name }}DraftItem(ctx, &entities.{{ .Name }}DraftItemFilter{
+    draftItems, err := {{ $shortRepo }}.{{ .Name }}DraftItemRepository.FindAll{{ .Name }}DraftItemWithSuffix(ctx, &entities.{{ .Name }}DraftItemFilter{
         FkDraft: entities.FilterOnField{{`{{ entities.Eq: IDDraft }}`}},
         {{- if .IsIncludeInactiveOnMove }}
         Active: entities.FilterOnField{{`{{ entities.Eq: []interface{}{false, true} }}`}},
         {{- end }}
-    }, nil)
+    }, nil, consts.SqlForUpdate)
     if err != nil {
         return false, err
     }
@@ -668,7 +668,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
             )
         {{- end }}
 
-        if _, err = {{ $shortRepo }}.Insert{{ .Name }}WithSuffix(ctx, item, onDuplicate); err != nil {
+        newItem, err := {{ $shortRepo }}.Insert{{ .Name }}WithSuffix(ctx, item, onDuplicate)
+        if err != nil {
+            return false, err
+        }
+
+        draftItem.Fk{{ .Name }} = util.NewNullInt64(int64(newItem.ID))
+        if _, err = {{ $shortRepo}}.{{ .Name }}DraftItemRepository.Update{{ .Name }}DraftItem(ctx, draftItem); err != nil {
             return false, err
         }
     }
@@ -692,7 +698,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
         defer db_manager.CommitTx(tx, &err, nil, nil)
     }
 
-    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByIDWithSuffix(ctx, IDDraft, nil, consts.SqlForUpdate)
     if err != nil {
         return false, err
     }
@@ -747,7 +753,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
         defer db_manager.CommitTx(tx, &err, nil, nil)
     }
 
-    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByIDWithSuffix(ctx, IDDraft, nil, consts.SqlForUpdate)
     if err != nil {
         return false, err
     }
@@ -802,7 +808,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Cont
         defer db_manager.CommitTx(tx, &err, nil, nil)
     }
 
-    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByID(ctx, IDDraft, nil)
+    draft, err := {{ $shortRepo }}.{{ .Name }}DraftRepository.{{ .Name }}DraftByIDWithSuffix(ctx, IDDraft, nil, consts.SqlForUpdate)
     if err != nil {
         return false, err
     }
