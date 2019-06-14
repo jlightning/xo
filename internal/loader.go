@@ -723,6 +723,11 @@ func (tl TypeLoader) LoadForeignKeys(args *ArgType, tableMap map[string]*Type, i
 		}
 
 		fk.FuncName = fk.RefType.Name
+		for _, field := range fk.Type.Fields {
+			if field.Name == fk.FuncName {
+				fk.FuncName = fk.FuncName + "By" + fk.Field.Name
+			}
+		}
 
 		thisTableIndexes := indexes[fk.Type]
 		for _, idx := range thisTableIndexes {
