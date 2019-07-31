@@ -1,19 +1,19 @@
 func UnmarshalDatetime(v interface{}) (time.Time, error) {
 	if str, ok := v.(string); ok {
 		layout := "2006-01-02 15:04:05"
-        result, err := time.ParseInLocation(layout, str, time.Local)
-        if err == nil {
-            return result, err
-        }
+		result, err := time.ParseInLocation(layout, str, time.Local)
+		if err == nil {
+			return result, err
+		}
 
-        layout = "2006-01-02"
-        result, err = time.ParseInLocation(layout, str, time.Local)
-        if err == nil {
-            return result, err
-        }
+		layout = "2006-01-02"
+		result, err = time.ParseInLocation(layout, str, time.Local)
+		if err == nil {
+			return result, err
+		}
 
-        layout = "15:04:05"
-        return time.ParseInLocation(layout, str, time.Local)
+		layout = "15:04:05"
+		return time.ParseInLocation(layout, str, time.Local)
 	}
 	return time.Time{}, errors.New("time should be a unix timestamp")
 }
@@ -49,12 +49,11 @@ func UnmarshalNullInt64(v interface{}) (sql.NullInt64, error) {
 	if v == nil {
 		return nullInt64, nil
 	}
-	if value, ok := v.(int64); ok {
-		nullInt64.Valid = true
-		nullInt64.Int64 = value
-		return nullInt64, nil
-	}
-	return nullInt64, errors.New("value is not integer")
+	value, err := graphql.UnmarshalInt(v)
+	nullInt64.Int64 = int64(value)
+	nullInt64.Valid = err == nil
+
+	return nullInt64, err
 }
 
 func MarshalNullInt64(v sql.NullInt64) graphql.Marshaler {
@@ -72,12 +71,11 @@ func UnmarshalNullFloat64(v interface{}) (sql.NullFloat64, error) {
 	if v == nil {
 		return nullFloat64, nil
 	}
-	if value, ok := v.(float64); ok {
-		nullFloat64.Valid = true
-		nullFloat64.Float64 = float64(value)
-		return nullFloat64, nil
-	}
-	return nullFloat64, errors.New("value is not float64")
+	value, err := graphql.UnmarshalFloat(v)
+	nullFloat64.Float64 = value
+	nullFloat64.Valid = err == nil
+
+	return nullFloat64, err
 }
 
 func MarshalNullFloat64(v sql.NullFloat64) graphql.Marshaler {
@@ -95,12 +93,11 @@ func UnmarshalNullString(v interface{}) (sql.NullString, error) {
 	if v == nil {
 		return nullString, nil
 	}
-	if value, ok := v.(string); ok {
-		nullString.Valid = true
-		nullString.String = value
-		return nullString, nil
-	}
-	return nullString, errors.New("value is not string")
+	value, err := graphql.UnmarshalString(v)
+	nullString.String = value
+	nullString.Valid = err == nil
+
+	return nullString, err
 }
 
 func MarshalNullString(v sql.NullString) graphql.Marshaler {
@@ -118,12 +115,11 @@ func UnmarshalNullBool(v interface{}) (sql.NullBool, error) {
 	if v == nil {
 		return nullBool, nil
 	}
-	if value, ok := v.(bool); ok {
-		nullBool.Valid = true
-		nullBool.Bool = value
-		return nullBool, nil
-	}
-	return nullBool, errors.New("value is not bool")
+	value, err := graphql.UnmarshalBoolean(v)
+	nullBool.Bool = value
+	nullBool.Valid = err == nil
+
+	return nullBool, err
 }
 
 func MarshalNullBool(v sql.NullBool) graphql.Marshaler {
@@ -203,14 +199,14 @@ func MarshalPnit(v geo.Point) graphql.Marshaler {
 type FilterType string
 
 const (
-	Eq   FilterType = "eq"
-	Neq             = "neq"
-	Gt              = "gt"
-	Gte             = "gte"
-	Lt              = "lt"
-	Lte             = "lte"
-	Like            = "like"
-	Between         = "between"
+	Eq      FilterType = "eq"
+	Neq                = "neq"
+	Gt                 = "gt"
+	Gte                = "gte"
+	Lt                 = "lt"
+	Lte                = "lte"
+	Like               = "like"
+	Between            = "between"
 )
 
 type FilterOnField []map[FilterType]interface{}
@@ -220,18 +216,18 @@ func (f *FilterOnField) UnmarshalGQL(v interface{}) error {
 	var err error
 	vjson, _ := json.Marshal(v)
 	if json.Unmarshal(vjson, f) == nil {
-        return nil
-    }
+		return nil
+	}
 	singleMap := map[FilterType]interface{}{}
 	err = json.Unmarshal(vjson, singleMap)
 	if err == nil {
-        *f = []map[FilterType]interface{}{
-            singleMap,
-        }
-        return nil
+		*f = []map[FilterType]interface{}{
+			singleMap,
+		}
+		return nil
 	}
 	*f = []map[FilterType]interface{}{
-	    {Eq: v},
+		{Eq: v},
 	}
 	return nil
 }
