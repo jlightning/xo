@@ -64,7 +64,7 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *e
         return result, nil
     }
     var f func() (interface{}, error)
-    if f, err = {{ $shortRepo }}.{{ lowerfirst .FuncName }}Loader.Load(obj.{{ .Field.Name }}, filter); err != nil {
+    if f, err = {{ $shortRepo }}.{{ lowerfirst .FuncName }}Loader.Load(ctx, obj.{{ .Field.Name }}, filter); err != nil {
         return result, err
     }
 
