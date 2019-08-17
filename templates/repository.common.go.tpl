@@ -1,10 +1,16 @@
-type AuditLogAction string
+type DbAction string
 
 const (
-	Insert AuditLogAction = "insert"
-	Update                = "update"
-	Delete                = "delete"
+	Insert DbAction = "insert"
+	Update          = "update"
+	Delete          = "delete"
 )
+
+type DbEvent struct {
+    EventType DbAction
+    Table string
+    Object interface{}
+}
 
 func AddFilterToQb(qb *sq.SelectBuilder, columnName string, filterOnField entities.FilterOnField) (*sq.SelectBuilder, error) {
     return addFilter(qb, columnName, filterOnField)

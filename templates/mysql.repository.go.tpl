@@ -34,9 +34,6 @@ type I{{ .RepoName }} interface {
         {{- end  }}
         {{- end }}
     {{- end }}
-    {{ if .DoesTableGenAuditLogsTable }}
-    InsertAuditLog(ctx context.Context, id int, action AuditLogAction) error
-    {{ end }}
 }
 
 // I{{ .RepoName }}QueryBuilder contains all the methods for query builder of '{{ $table }}'
@@ -59,6 +56,7 @@ type I{{ .Name }}CRRepository interface {
 // {{ .RepoName }} is responsible for CRUD from / to '{{ $table }}'
 type {{ .RepoName }} struct {
     Db db_manager.IDb
+    EventManager event_manager.IEventManager
     QueryBuilder I{{ .RepoName }}QueryBuilder
     {{- if .DoesTableGenApprovalTable }}
     {{ .Name }}DraftRepository I{{ .Name }}DraftRepository
@@ -160,15 +158,25 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
     }
     {{- end }}
 
-	new{{ $short }} := entities.{{ .Name }}{}
+	result := entities.{{ .Name }}{}
 
-	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+	err = {{ $shortRepo }}.Db.Get(ctx, &result, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+	if err != nil {
+        return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+    }
 
-	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
+    if err = {{ $shortRepo }}.EventManager.Send(event_manager.EventTypeDbTrigger, event_manager.EventContentWithContext{
+        Ctx: ctx,
+        Content: &DbEvent{EventType: Insert, Table: "{{ $table }}", Object: &result},
+    }); err != nil {
+        return &result, err
+    }
+
+    return &result, nil
 }
 
 {{ if .DoesTableGenAuditLogsTable }}
-func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id int, action AuditLogAction) error {
+func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id int, action DbAction) error {
 	user := context_manager.GetUserContext(ctx)
     IDUserSelect := "NULL AS `audit_fk_user`"
     if user != nil {
@@ -245,13 +253,24 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 
         result := entities.{{ .Name }}{}
         err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
+        if err != nil {
+            return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+        }
 
         {{- if .DoesTableGenAuditLogsTable }}
         if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $primaryKey.Name }}, Update); err != nil {
             return nil, err
         }
         {{ end }}
-        return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+
+        if err = {{ $shortRepo }}.EventManager.Send(event_manager.EventTypeDbTrigger, event_manager.EventContentWithContext{
+            Ctx: ctx,
+            Content: &DbEvent{EventType: Update, Table: "{{ $table }}", Object: &result},
+        }); err != nil {
+            return &result, err
+        }
+
+        return &result, nil
 	}
 
     // Update updates the {{ .Name }} in the database.
@@ -303,12 +322,23 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 
             result := entities.{{ .Name }}{}
             err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
+            if err != nil {
+                return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+            }
 
             {{- if .DoesTableGenAuditLogsTable }}
             if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Update); err != nil {
                 return nil, err
             }
             {{ end }}
+
+            if err = {{ $shortRepo }}.EventManager.Send(event_manager.EventTypeDbTrigger, event_manager.EventContentWithContext{
+                Ctx: ctx,
+                Content: &DbEvent{EventType: Update, Table: "{{ $table }}", Object: &result},
+            }); err != nil {
+                return &result, err
+            }
+
             return &result, errors.Wrap(err, "error in {{ .RepoName }}")
     	}
 {{ else }}
@@ -319,14 +349,30 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error {
 	var err error
 
+    result := entities.{{ .Name }}{}
+    selectQb := sq.Select("*").From("`{{ $table }}`")
+    {{- if gt ( len .PrimaryKeyFields ) 1 }}
+        selectQb = selectQb.Where(sq.Eq{
+            {{- range .PrimaryKeyFields }}
+                "`{{ .Col.ColumnName }}`": {{ $short}}.{{ .Name }},
+            {{- end }}
+            })
+    {{- else }}
+        selectQb = selectQb.Where(sq.Eq{"`{{ .PrimaryKey.Col.ColumnName }}`": {{ $short}}.{{ .PrimaryKey.Name }}})
+    {{- end }}
+
     {{ if .HasActiveField }}
     qb := sq.Update("`{{ $table }}`").Set("active", false)
     {{ else }}
+    if err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb); err != nil {
+        return errors.Wrap(err, "error in {{ .RepoName }}")
+    }
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
         return err
     }
     {{ end }}
+
     qb := sq.Delete("`{{ $table }}`")
     {{ end -}}
 
@@ -346,45 +392,32 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
         return errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- if .HasActiveField }}
+    if err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb); err != nil {
+        return errors.Wrap(err, "error in {{ .RepoName }}")
+    }
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
         return errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- end }}
     {{- end }}
+
+    if err = {{ $shortRepo }}.EventManager.Send(event_manager.EventTypeDbTrigger, event_manager.EventContentWithContext{
+        Ctx: ctx,
+        Content: &DbEvent{EventType: Delete, Table: "{{ $table }}", Object: &result},
+    }); err != nil {
+        return err
+    }
+
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
 {{ if eq ( len .PrimaryKeyFields ) 1 }}
 func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error) {
-    var err error
-
-    {{ if .HasActiveField }}
-    qb := sq.Update("`{{ $table }}`").Set("active", false)
-    {{ else }}
-    {{- if .DoesTableGenAuditLogsTable }}
-    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
-        return false, err
-    }
-    {{ end }}
-    qb := sq.Delete("`{{ $table }}`")
-    {{ end -}}
-
-    qb = qb.Where(sq.Eq{"`{{ colname $primaryKey.Col}}`": id})
-
-    // run query
-    _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
-    if err != nil {
-        return false, errors.Wrap(err, "error in {{ .RepoName }}")
-    }
-    {{- if .HasActiveField }}
-    {{- if .DoesTableGenAuditLogsTable }}
-    if err = {{ $shortRepo }}.InsertAuditLog(ctx, id, Delete); err != nil {
-        return false, errors.Wrap(err, "error in {{ .RepoName }}")
-    }
-    {{- end }}
-    {{- end }}
-    return err == nil, errors.Wrap(err, "error in {{ .RepoName }}")
+    err := {{ $shortRepo }}.Delete{{ .Name }}(ctx, entities.{{ .Name }}{
+        {{ $primaryKey.Name }}: id,
+    })
+    return err == nil, err
 }
 {{- end }}
 
