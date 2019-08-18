@@ -17,6 +17,7 @@
 // templates/mysql.querytype.go.tpl
 // templates/mysql.repository.go.tpl
 // templates/mysql.type.go.tpl
+// templates/mysql.type.index.go.tpl
 // templates/oracle.foreignkey.go.tpl
 // templates/oracle.index.go.tpl
 // templates/oracle.query.go.tpl
@@ -447,6 +448,26 @@ func mysqlTypeGoTpl() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "mysql.type.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _mysqlTypeIndexGoTpl = "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xbc\x92\xc1\x4b\xc3\x30\x18\xc5\xef\xfb\x2b\xde\x31\x91\x19\xf4\x2a\xf4\xa2\x22\x0c\xd4\xd3\x3c\x8d\x21\xc1\x7e\x93\xd0\x24\xed\xda\xb4\x38\x42\xff\x77\xf9\x5a\xd7\x8d\xad\x88\xeb\xc1\x9d\xc2\xf2\xbe\xdf\xeb\x7b\xf9\x62\xbc\x86\xd9\x80\xb6\x10\xb0\xe4\xa1\x9e\x0c\xd9\xb4\x82\xc4\x2d\xda\x76\x06\x00\x3f\x12\xb5\xf0\x29\x7d\xa9\x45\xf5\xe6\xcd\xb6\xa6\xfd\xed\xa6\xf6\x1f\x10\x16\x57\xcf\xa6\x0a\x31\x42\x2d\x77\x05\xa9\x57\xed\x58\x21\xf1\xa2\x8b\xfb\x5d\x8c\x10\x86\xa7\x07\xfc\x8d\xdc\x4b\x84\x84\x70\x70\xba\x58\x8d\xaa\x98\x86\xb6\x5d\x9f\x93\x63\x67\xcf\x3f\x87\x04\x4e\x67\x04\x71\x31\x66\xce\xa1\x85\x55\x8f\x3a\x68\x29\x07\xe2\x26\x2f\xf1\x3e\x87\x09\xe4\x70\x97\xa0\xd4\xfe\x93\xd0\xab\x8e\x7c\x3b\xef\x15\x8b\xd4\x6f\x09\xd7\x48\x3a\xd2\x30\xd7\x0e\xa7\x92\x42\x5d\x7a\xf4\x57\x87\xb6\xc9\x56\xff\xdd\xef\x38\x7d\x52\xc7\xa3\xa8\x09\xd5\x5a\x53\x05\x96\xfc\xa5\xe2\xb3\xc1\x1e\x98\x40\x17\x05\xf9\x54\x0c\x7f\xf5\xce\x72\x36\xe5\x11\x19\x32\xf2\x88\x9c\x28\x9b\xa3\x39\xc4\x71\x27\x49\x1a\xb5\xcc\x83\xb6\x0f\x79\xed\x03\x73\xc8\x8b\xa6\x5f\xb9\x93\xcf\xc8\xd8\xa6\xb9\x60\x51\x7c\xca\x7b\x72\x74\xfc\x0e\x00\x00\xff\xff\xf9\xd3\x8c\x53\xd0\x03\x00\x00"
+
+func mysqlTypeIndexGoTplBytes() ([]byte, error) {
+	return bindataRead(
+		_mysqlTypeIndexGoTpl,
+		"mysql.type.index.go.tpl",
+	)
+}
+
+func mysqlTypeIndexGoTpl() (*asset, error) {
+	bytes, err := mysqlTypeIndexGoTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "mysql.type.index.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1060,6 +1081,7 @@ var _bindata = map[string]func() (*asset, error){
 	"mysql.querytype.go.tpl": mysqlQuerytypeGoTpl,
 	"mysql.repository.go.tpl": mysqlRepositoryGoTpl,
 	"mysql.type.go.tpl": mysqlTypeGoTpl,
+	"mysql.type.index.go.tpl": mysqlTypeIndexGoTpl,
 	"oracle.foreignkey.go.tpl": oracleForeignkeyGoTpl,
 	"oracle.index.go.tpl": oracleIndexGoTpl,
 	"oracle.query.go.tpl": oracleQueryGoTpl,
@@ -1146,6 +1168,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"mysql.querytype.go.tpl": &bintree{mysqlQuerytypeGoTpl, map[string]*bintree{}},
 	"mysql.repository.go.tpl": &bintree{mysqlRepositoryGoTpl, map[string]*bintree{}},
 	"mysql.type.go.tpl": &bintree{mysqlTypeGoTpl, map[string]*bintree{}},
+	"mysql.type.index.go.tpl": &bintree{mysqlTypeIndexGoTpl, map[string]*bintree{}},
 	"oracle.foreignkey.go.tpl": &bintree{oracleForeignkeyGoTpl, map[string]*bintree{}},
 	"oracle.index.go.tpl": &bintree{oracleIndexGoTpl, map[string]*bintree{}},
 	"oracle.query.go.tpl": &bintree{oracleQueryGoTpl, map[string]*bintree{}},

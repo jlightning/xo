@@ -14,6 +14,7 @@ const (
 	RepositoryCommonTemplate
 	ForeignKeyTemplate
 	IndexTemplate
+	IndexInTypeTemplate
 	QueryTypeTemplate
 	QueryTemplate
 
@@ -51,6 +52,8 @@ func (tt TemplateType) String() string {
 		s = "foreignkey"
 	case IndexTemplate:
 		s = "index"
+	case IndexInTypeTemplate:
+		s = "type.index"
 	case QueryTypeTemplate:
 		s = "querytype"
 	case QueryTemplate:
