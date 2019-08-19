@@ -998,13 +998,11 @@ func (tl TypeLoader) LoadIndexes(args *ArgType, tableMap map[string]*Type) (map[
 	genMapFuncFoIndex := map[string]*Index{}
 	for _, k := range keys {
 		ix := ixMap[k]
-		if len(ix.Fields) == 1 {
-			mapKey := ix.Type.Name+"_"+ix.Fields[0].Name
-			if genMapFuncFoIndex[mapKey] == nil {
-				genMapFuncFoIndex[mapKey] = ix
-			} else if !genMapFuncFoIndex[mapKey].Index.IsUnique && ix.Index.IsUnique {
-				genMapFuncFoIndex[mapKey] = ix
-			}
+		mapKey := ix.Type.Name + "_" + ix.Fields[0].Name
+		if genMapFuncFoIndex[mapKey] == nil {
+			genMapFuncFoIndex[mapKey] = ix
+		} else if !genMapFuncFoIndex[mapKey].Index.IsUnique && ix.Index.IsUnique {
+			genMapFuncFoIndex[mapKey] = ix
 		}
 	}
 
