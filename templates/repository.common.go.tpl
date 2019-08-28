@@ -56,7 +56,7 @@ func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnFi
 	return combined, nil
 }
 
-func addPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error) {
+func AddPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error) {
 	if pagination != nil {
 		if pagination.Page != nil && pagination.PerPage != nil {
 			offset := uint64((*pagination.Page - 1) * *pagination.PerPage)
