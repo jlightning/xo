@@ -101,13 +101,13 @@ func UnmarshalNullString(v interface{}) (sql.NullString, error) {
 }
 
 func MarshalNullString(v sql.NullString) graphql.Marshaler {
-	return graphql.WriterFunc(func(w io.Writer) {
-		if v.Valid {
-			io.WriteString(w, `"`+v.String+`"`)
-		} else {
+	if v.Valid {
+		return graphql.MarshalString(v.String)
+	} else {
+		return graphql.WriterFunc(func(w io.Writer) {
 			io.WriteString(w, "null")
-		}
-	})
+		})
+	}
 }
 
 func UnmarshalNullBool(v interface{}) (sql.NullBool, error) {
