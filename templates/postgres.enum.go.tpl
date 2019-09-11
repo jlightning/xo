@@ -63,6 +63,11 @@ func ({{ $short }} {{ $type }}) Value() (driver.Value, error) {
 	return {{ $short }}.String(), nil
 }
 
+// Value satisfies the sql/driver.Valuer interface for {{ $type }}.
+func ({{ $short }} {{ $type }}) Ptr() *{{ $type }} {
+	return &{{ $short }}
+}
+
 // Scan satisfies the database/sql.Scanner interface for {{ $type }}.
 func ({{ $short }} *{{ $type }}) Scan(src interface{}) error {
 	buf, ok := src.([]byte)
