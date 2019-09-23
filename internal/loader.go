@@ -944,7 +944,6 @@ func (tl TypeLoader) LoadIndexes(args *ArgType, tableMap map[string]*Type) (map[
 		for _, k := range keys {
 			ix := _ixMap[k]
 			if len(ix.Fields) > 1 {
-			outerLoop:
 				for i := 1; i < len(ix.Fields); i++ {
 					newIx := &Index{
 						FuncName: ix.FuncName,
@@ -962,12 +961,15 @@ func (tl TypeLoader) LoadIndexes(args *ArgType, tableMap map[string]*Type) (map[
 						Comment: ix.Comment,
 					}
 					args.BuildIndexFuncName(newIx)
-					for _, _ix := range _ixMap {
-						if _ix.FuncName == newIx.FuncName {
-							continue outerLoop
-						}
-					}
 					_ixMap[fmt.Sprintf("%s_%d", k, i)] = newIx
+				}
+			}
+		}
+
+		for k1, ix1 := range _ixMap {
+			for k2, ix2 := range _ixMap {
+				if k1 != k2 && ix1.FuncName == ix2.FuncName{
+					delete(_ixMap, k2)
 				}
 			}
 		}
