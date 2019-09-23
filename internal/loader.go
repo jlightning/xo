@@ -966,12 +966,25 @@ func (tl TypeLoader) LoadIndexes(args *ArgType, tableMap map[string]*Type) (map[
 			}
 		}
 
-		for k1, ix1 := range _ixMap {
-			for k2, ix2 := range _ixMap {
-				if k1 != k2 && ix1.FuncName == ix2.FuncName{
-					delete(_ixMap, k2)
+		keys = nil
+		for k := range _ixMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		var keysToDelete []string
+		for i := 0; i < len(keys)-1; i++ {
+			for j := i + 1; j < len(keys); j++ {
+				ix1 := _ixMap[keys[i]]
+				ix2 := _ixMap[keys[j]]
+				if ix1.FuncName == ix2.FuncName {
+					keysToDelete = append(keysToDelete, keys[j])
 				}
 			}
+		}
+
+		for _, k := range keysToDelete {
+			delete(_ixMap, k)
 		}
 
 		result[t] = _ixMap
