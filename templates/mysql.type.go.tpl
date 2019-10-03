@@ -98,7 +98,7 @@ func (f *{{ $typeName }}Filter) Hash() (string, error) {
     if f == nil {
         return "", nil
     }
-    h := md5.New()
+    h := sha256.New()
     list := []struct{
         filter FilterOnField
         name string
