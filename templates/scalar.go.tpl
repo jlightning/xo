@@ -256,7 +256,7 @@ func (f *FilterOnField) Hash() (string, error) {
 	}
 	sort.Strings(arr)
 
-	h := md5.New()
+	h := sha256.New()
 	for _, item := range arr {
 		_, err := io.WriteString(h, item)
 		if err != nil {
