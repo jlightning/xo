@@ -16,7 +16,7 @@ type {{ .Name }} {
 
 {{- range $fkGroup.ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }}{{- if .Field.Col.NotNull}}!{{- end }} @filterModifier(from: "{{ $table }}")
+    {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }} @filterModifier(from: "{{ $table }}")
 {{- end }}
 {{- end }}
 

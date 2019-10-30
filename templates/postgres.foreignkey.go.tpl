@@ -5,7 +5,7 @@
 type I{{ .Name }} interface {
 {{- range .ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-    {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) ({{- if ne .Field.Col.NotNull true}}*{{- end }}entities.{{ .RefType.Name }}, error)
+    {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) (*entities.{{ .RefType.Name }}, error)
 {{- end }}
 {{- end }}
 
@@ -59,7 +59,7 @@ func Init{{ .Name }}({{- range $k, $v := .DependOnRepo }}{{ $v }} I{{ $v }}, {{-
 
 {{- range .ManyToOneKeys }}
 {{- if ne .CallFuncName "" }}
-func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) (result {{if ne .Field.Col.NotNull true}}*{{- end }}entities.{{ .RefType.Name }}, err error) {
+func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) (result *entities.{{ .RefType.Name }}, err error) {
     if obj == nil {
         return result, nil
     }
@@ -69,17 +69,13 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *e
     }
 
     if data, err := f(); err == nil {
-        tmp := data.(entities.{{ .RefType.Name }})
-        return {{ if ne .Field.Col.NotNull true}}&{{- end }}tmp, nil
+        tmp := data.(*entities.{{ .RefType.Name }})
+        return tmp, nil
     } else {
-        {{- if ne .Field.Col.NotNull true }}
-            if err == sql.ErrNoRows {
-                return nil, nil
-            }
-            return nil, err
-        {{- else }}
-            return result, err
-        {{- end }}
+        if err == sql.ErrNoRows {
+            return nil, nil
+        }
+        return nil, err
     }
 }
 {{- end }}
