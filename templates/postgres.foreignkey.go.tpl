@@ -69,8 +69,8 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *e
     }
 
     if data, err := f(); err == nil {
-        tmp := data.(*entities.{{ .RefType.Name }})
-        return tmp, nil
+        tmp := data.(entities.{{ .RefType.Name }})
+        return &tmp, nil
     } else {
         if err == sql.ErrNoRows {
             return nil, nil
