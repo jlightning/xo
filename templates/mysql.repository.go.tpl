@@ -14,6 +14,7 @@ type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
     Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error)
+    Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int, error)
     {{- if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
     Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
@@ -89,6 +90,28 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}(ctx context.Context, 
 func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error) {
 	var err error
 
+    // retrieve id
+	id, err := {{ $shortRepo }}.Insert{{ .Name }}IDResult(ctx, {{ $short }}, suffix)
+	if err != nil {
+		return nil, err
+	}
+
+    {{ if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, int(id), Insert); err != nil {
+        return nil, err
+    }
+    {{- end }}
+
+	new{{ $short }} := entities.{{ .Name }}{}
+
+	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+
+	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
+}
+
+func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int, error) {
+	var err error
+
 {{ if .Table.ManualPk  }}
 	// sql insert query, primary key must be provided
 	qb := sq.Insert("`{{ $table }}`").Columns(
@@ -154,17 +177,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
-    {{ if .DoesTableGenAuditLogsTable }}
-    if err = {{ $shortRepo }}.InsertAuditLog(ctx, int(id), Insert); err != nil {
-        return nil, err
-    }
-    {{- end }}
-
-	new{{ $short }} := entities.{{ .Name }}{}
-
-	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
-
-	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
+    return id, nil
 }
 
 {{ if .DoesTableGenAuditLogsTable }}
