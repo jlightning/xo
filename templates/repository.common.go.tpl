@@ -21,6 +21,50 @@ func addFilter(qb *sq.SelectBuilder, columnName string, filterOnField entities.F
 	return qb, nil
 }
 
+func addAdditionalFilter(qb *sq.SelectBuilder, wheres, joins, leftJoins []sq.Sqlizer, groupBys []string, havings []sq.Sqlizer) (*sq.SelectBuilder, error) {
+	if wheres != nil {
+		for _, where := range wheres {
+			query, args, err := where.ToSql()
+			if err != nil {
+				return qb, err
+			}
+			qb = qb.Where(query, args...)
+		}
+	}
+	if joins != nil {
+		for _, join := range joins {
+			query, args, err := join.ToSql()
+			if err != nil {
+				return qb, err
+			}
+			qb = qb.Join(query, args...)
+		}
+	}
+	if leftJoins != nil {
+		for _, leftJoin := range leftJoins {
+			query, args, err := leftJoin.ToSql()
+			if err != nil {
+				return qb, err
+			}
+			qb = qb.LeftJoin(query, args...)
+		}
+	}
+	if groupBys != nil {
+		qb = qb.GroupBy(groupBys...)
+	}
+	if havings != nil {
+		for _, item := range havings {
+			query, args, err := item.ToSql()
+			if err != nil {
+				return qb, err
+			}
+			qb = qb.Having(query, args...)
+		}
+	}
+
+	return qb, nil
+}
+
 func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnField) (sq.Sqlizer, error) {
 	var combined sq.And
 	for _, filterList := range filterOnField {

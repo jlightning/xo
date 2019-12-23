@@ -14,7 +14,7 @@ type I{{ .RepoName }} interface {
     {{ if .PrimaryKey }}
     Insert{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}Create) (*entities.{{ .Name }}, error)
     Insert{{ .Name }}WithSuffix(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (*entities.{{ .Name }}, error)
-    Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int, error)
+    Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int64, error)
     {{- if ne (fieldnamesmulti .Fields $short .PrimaryKeyFields) "" }}
     Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
@@ -109,7 +109,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
-func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int, error) {
+func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int64, error) {
 	var err error
 
 {{ if .Table.ManualPk  }}
@@ -130,7 +130,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
     if suffix != nil {
         suffixQuery, suffixArgs, suffixErr := suffix.ToSql()
         if suffixErr != nil {
-            return nil, suffixErr
+            return 0, suffixErr
         }
         qb.Suffix(suffixQuery, suffixArgs...)
     }
@@ -138,7 +138,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	// run query
 	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
-		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
 {{ else }}
@@ -159,7 +159,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	if suffix != nil {
         suffixQuery, suffixArgs, suffixErr := suffix.ToSql()
         if suffixErr != nil {
-            return nil, suffixErr
+            return 0, suffixErr
         }
         qb.Suffix(suffixQuery, suffixArgs...)
     }
@@ -167,14 +167,14 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	// run query
 	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
-		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 {{ end }}
 
     // retrieve id
 	id, err := res.LastInsertId()
 	if err != nil {
-		return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
 
     return id, nil
@@ -429,44 +429,9 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) FindAll{{ .Name }}BaseQuery
             {{- end }}
         {{- end }}
 
-        if filter.Wheres != nil {
-            for _, where := range filter.Wheres {
-                query, args, err := where.ToSql()
-                if err != nil {
-                    return qb, err
-                }
-                qb = qb.Where(query, args...)
-            }
-        }
-        if filter.Joins != nil {
-            for _, join := range filter.Joins {
-                query, args, err := join.ToSql()
-                if err != nil {
-                    return qb, err
-                }
-                qb = qb.Join(query, args...)
-            }
-        }
-        if filter.LeftJoins != nil {
-            for _, leftJoin := range filter.LeftJoins {
-                query, args, err := leftJoin.ToSql()
-                if err != nil {
-                    return qb, err
-                }
-                qb = qb.LeftJoin(query, args...)
-            }
-        }
-        if filter.GroupBys != nil {
-            qb = qb.GroupBy(filter.GroupBys...)
-        }
-        if filter.Havings != nil {
-            for _, item := range filter.Havings {
-                query, args, err := item.ToSql()
-                if err != nil {
-                    return qb, err
-                }
-                qb = qb.Having(query, args...)
-            }
+        qb, err = addAdditionalFilter(qb, filter.Wheres, filter.Joins, filter.LeftJoins, filter.GroupBys, filter.Havings)
+        if err != nil {
+            return qb, err
         }
     } else {
         {{- range .Fields }}
