@@ -119,10 +119,15 @@ func GetSortFieldMapFromFields(tableName string, fields []string) map[string]str
 				break
 			}
 		}
-		camelColName := snaker.ForceLowerCamelIdentifier(colName)
+		lowerCamel := snaker.ForceLowerCamelIdentifier(colName)
 
-		sortFieldMap[camelColName] = tablePrefix + "`" + colName + "` ASC"
-		sortFieldMap["-"+camelColName] = tablePrefix + "`" + colName + "` DESC"
+		sortFieldMap[lowerCamel] = tablePrefix + "`" + colName + "` ASC"
+		sortFieldMap["-"+lowerCamel] = tablePrefix + "`" + colName + "` DESC"
+
+		if colName == "id" {
+			sortFieldMap["ID"] = tablePrefix + "`" + colName + "` ASC"
+			sortFieldMap["-ID"] = tablePrefix + "`" + colName + "` DESC"
+		}
 
 		sortFieldMap[colName] = tablePrefix + "`" + colName + "` ASC"
 		sortFieldMap["-"+colName] = tablePrefix + "`" + colName + "` DESC"
