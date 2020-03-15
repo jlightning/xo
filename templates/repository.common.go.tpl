@@ -100,23 +100,32 @@ func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnFi
 	return combined, nil
 }
 
-func AddPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, fields []string) (*sq.SelectBuilder, error) {
-	return AddPaginationWithSortFieldMap(qb, pagination, getSortFieldMapFromFields(fields))
+func AddPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, tableName string, fields []string) (*sq.SelectBuilder, error) {
+	return AddPaginationWithSortFieldMap(qb, pagination, GetSortFieldMapFromFields(tableName, fields))
 }
 
-func getSortFieldMapFromFields(fields []string) map[string]string {
+func GetSortFieldMapFromFields(tableName string, fields []string) map[string]string {
+	tableName = strings.Trim(tableName, "`")
+	tablePrefix := ""
+	if len(tableName) != 0 {
+		tablePrefix = "`" + tableName + "`."
+	}
 	sortFieldMap := make(map[string]string, len(fields)*4)
 	for _, field := range fields {
-		sortFieldMap[field] = field + " ASC"
-		sortFieldMap["-"+field] = field + " DESC"
+		colName := strings.Trim(field, "`")
+		for _, c := range colName {
+			if c >= 'A' && c <= 'Z' {
+				colName = snaker.CamelToSnake(colName)
+				break
+			}
+		}
+		camelColName := snaker.ForceLowerCamelIdentifier(colName)
 
-		fieldCamel := snaker.ForceLowerCamelIdentifier(field)
-		sortFieldMap[fieldCamel] = fieldCamel + " ASC"
-		sortFieldMap["-"+fieldCamel] = fieldCamel + " DESC"
+		sortFieldMap[camelColName] = tablePrefix + "`" + colName + "` ASC"
+		sortFieldMap["-"+camelColName] = tablePrefix + "`" + colName + "` DESC"
 
-		fieldSnake := snaker.CamelToSnake(field)
-		sortFieldMap[fieldSnake] = fieldSnake + " ASC"
-		sortFieldMap["-"+fieldSnake] = fieldSnake + " DESC"
+		sortFieldMap[colName] = tablePrefix + "`" + colName + "` ASC"
+		sortFieldMap["-"+colName] = tablePrefix + "`" + colName + "` DESC"
 	}
 	return sortFieldMap
 }

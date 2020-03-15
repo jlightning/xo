@@ -468,7 +468,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) AddPagination(ctx context.C
             {{- end }}
         {{- end }}
     }
-    return AddPagination(qb, pagination, fields)
+    return AddPagination(qb, pagination, "{{ $table }}", fields)
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Name }}, err error) {
