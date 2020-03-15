@@ -461,19 +461,14 @@ func ({{ $shortRepo }} *{{ .RepoName }}) AddPagination(ctx context.Context, qb *
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}QueryBuilder) AddPagination(ctx context.Context, qb *sq.SelectBuilder, pagination *entities.Pagination) (*sq.SelectBuilder, error) {
-    sortFieldMap := map[string]string{
+    fields := []string {
         {{- range .Fields }}
             {{- if ne .Col.IsVirtualFromConfig true }}
-                "{{ lowerfirst .Name }}": "`{{ .Col.ColumnName }}` ASC",
-                "-{{ lowerfirst .Name }}": "`{{ .Col.ColumnName }}` DESC",
-                {{- if ne .Col.ColumnName (lowerfirst .Name) }}
-                    "{{ .Col.ColumnName }}": "`{{ .Col.ColumnName }}` ASC",
-                    "-{{ .Col.ColumnName }}": "`{{ .Col.ColumnName }}` DESC",
-                {{- end }}
+                "{{ .Col.ColumnName }}",
             {{- end }}
         {{- end }}
     }
-    return AddPagination(qb, pagination, sortFieldMap)
+    return AddPagination(qb, pagination, fields)
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination) (list entities.List{{ .Name }}, err error) {

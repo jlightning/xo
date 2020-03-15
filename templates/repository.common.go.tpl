@@ -100,15 +100,36 @@ func FilterOnFieldToSqlizer(columnName string, filterOnField entities.FilterOnFi
 	return combined, nil
 }
 
-func AddPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error) {
+func AddPagination(qb *sq.SelectBuilder, pagination *entities.Pagination, fields []string) (*sq.SelectBuilder, error) {
+	return AddPaginationWithSortFieldMap(qb, pagination, getSortFieldMapFromFields(fields))
+}
+
+func getSortFieldMapFromFields(fields []string) map[string]string {
+	sortFieldMap := make(map[string]string, len(fields)*4)
+	for _, field := range fields {
+		sortFieldMap[field] = field + " ASC"
+		sortFieldMap["-"+field] = field + " DESC"
+
+		fieldCamel := snaker.ForceLowerCamelIdentifier(field)
+		sortFieldMap[fieldCamel] = fieldCamel + " ASC"
+		sortFieldMap["-"+fieldCamel] = fieldCamel + " DESC"
+
+		fieldSnake := snaker.CamelToSnake(field)
+		sortFieldMap[fieldSnake] = fieldSnake + " ASC"
+		sortFieldMap["-"+fieldSnake] = fieldSnake + " DESC"
+	}
+	return sortFieldMap
+}
+
+func AddPaginationWithSortFieldMap(qb *sq.SelectBuilder, pagination *entities.Pagination, sortFieldMap map[string]string) (*sq.SelectBuilder, error) {
 	if pagination != nil {
 		if pagination.Page != nil && pagination.PerPage != nil {
 			offset := uint64((*pagination.Page - 1) * *pagination.PerPage)
 			qb = qb.Offset(offset).Limit(uint64(*pagination.PerPage))
 		}
 		if pagination.CustomSort != nil {
-            qb = qb.OrderBy(pagination.CustomSort...)
-        }
+			qb = qb.OrderBy(pagination.CustomSort...)
+		}
 		if pagination.Sort != nil {
 			var orderStrs []string
 			for _, field := range pagination.Sort {
