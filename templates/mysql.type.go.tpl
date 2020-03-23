@@ -204,7 +204,7 @@ type List{{ .Name }} struct {
     Data []{{ .Name }}
 }
 
-{{- range .Fields }}
+{{ range .Fields }}
     {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
         {{- if and .Col.IsEnum (ne .Col.NotNull true) }}
             func (l *List{{ $name }}) GetAll{{ .Name }}() []*{{ retype .Type }} {
