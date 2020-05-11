@@ -3,6 +3,7 @@
 {{- $tableVar := .Table -}}
 {{- $primaryKey := .PrimaryKey -}}
 {{- $fkGroup := .ForeignKeyGroup -}}
+{{- $this := . -}}
 type {{ .Name }} {
 {{- range .Fields }}
 {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInType }}
@@ -15,13 +16,13 @@ type {{ .Name }} {
 {{- if $fkGroup }}
 
 {{- range $fkGroup.ManyToOneKeys }}
-{{- if ne .CallFuncName "" }}
+{{- if and (ne .CallFuncName "") (ne ($this.IsGraphQLConnectionExcluded .RefType.Table.TableName) true) }}
     {{ lowerfirst .FuncName }}(filter: {{ .RefType.Name }}Filter): {{ .RefType.Name }} @filterModifier(from: "{{ $table }}")
 {{- end }}
 {{- end }}
 
 {{- range $fkGroup.OneToManyKeys }}
-{{- if ne .RevertCallFuncName "" }}
+{{- if and (ne .RevertCallFuncName "") (ne ($this.IsGraphQLConnectionExcluded .Type.Table.TableName) true) }}
     {{- if .IsUnique }}
     {{ lowerfirst .RevertFuncName }}(filter: {{ .Type.Name }}Filter): {{ .Type.Name }} @filterModifier(from: "{{ $table }}")
     {{- else }}

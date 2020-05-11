@@ -780,7 +780,7 @@ func (tl TypeLoader) LoadForeignKeys(args *ArgType, tableMap map[string]*Type, i
 		check := map[string]bool{}
 		duplicatedCheck := map[string][]*ForeignKey{}
 		for _, fk := range g.ManyToOneKeys {
-			if !check[fk.RefType.RepoName] {
+			if !check[fk.RefType.RepoName] && !XoConfig.IsGraphQLConnectionExcluded(fk.Type.Table.TableName, fk.RefType.Table.TableName) {
 				check[fk.RefType.RepoName] = true
 				g.DependOnRepo = append(g.DependOnRepo, fk.RefType.RepoName)
 			}
@@ -797,7 +797,7 @@ func (tl TypeLoader) LoadForeignKeys(args *ArgType, tableMap map[string]*Type, i
 
 		duplicatedCheck = map[string][]*ForeignKey{}
 		for _, fk := range g.OneToManyKeys {
-			if !check[fk.Type.RepoName] {
+			if !check[fk.Type.RepoName] && !XoConfig.IsGraphQLConnectionExcluded(fk.Type.Table.TableName, fk.RefType.Table.TableName) {
 				check[fk.Type.RepoName] = true
 				g.DependOnRepo = append(g.DependOnRepo, fk.Type.RepoName)
 			}

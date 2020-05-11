@@ -1,6 +1,8 @@
 package internal
 
-import "github.com/jlightning/xo/models"
+import (
+	"github.com/jlightning/xo/models"
+)
 
 // TemplateType represents a template type.
 type TemplateType uint
@@ -203,6 +205,10 @@ func (t *Type) IsIncludeInactiveOnMove() bool {
 		return true
 	}
 	return false
+}
+
+func (t *Type) IsGraphQLConnectionExcluded(to string) bool {
+	return XoConfig.IsGraphQLConnectionExcluded(t.Table.TableName, to)
 }
 
 // ForeignKey is a template item for a foreign relationship on a table.

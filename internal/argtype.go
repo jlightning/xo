@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/knq/snaker"
+	"gopkg.in/yaml.v2"
 )
 
 // ArgType is the type that specifies the command line arguments.
@@ -179,6 +180,18 @@ type approvalTable struct {
 	DraftFields           []approvalTableDraftField `yaml:"add_field_to_draft"`
 }
 
+type graphQLExcludeMode uint8
+
+const (
+	graphQLExcludeModeOneWay  graphQLExcludeMode = 1
+	graphQLExcludeModeBothWay graphQLExcludeMode = 2
+)
+
+type graphQLConnection struct {
+	from string
+	to   string
+}
+
 type xoConfigType struct {
 	GenApprovalTable  map[string]approvalTable `yaml:"gen_approval_table"`
 	GenAuditLogsTable map[string]struct {
@@ -203,6 +216,8 @@ type xoConfigType struct {
 			ExcludeInUpdate *bool  `yaml:"exclude_in_update"`
 		} `yaml:"exclude_field"`
 	}
+	ExcludeGraphQLConnection  map[string][]string `yaml:"exclude_graphql_connection"`
+	excludeGraphQLConnections map[graphQLConnection]graphQLExcludeMode
 }
 
 func (xc *xoConfigType) IsTableExcluded(tableName string) bool {
@@ -230,6 +245,34 @@ func (xc *xoConfigType) DoesTableGenAuditLogs(tableName string) bool {
 		return true
 	}
 	return false
+}
+
+func (xc *xoConfigType) Load(data []byte) error {
+	err := yaml.Unmarshal(data, xc)
+	if err != nil {
+		return err
+	}
+
+	xc.excludeGraphQLConnections = make(map[graphQLConnection]graphQLExcludeMode)
+	for k, arr := range xc.ExcludeGraphQLConnection {
+		for _, item := range arr {
+			if strings.HasSuffix(item, "<>") {
+				xc.excludeGraphQLConnections[graphQLConnection{from: k, to: item[:len(item)-2]}] = graphQLExcludeModeBothWay
+			} else {
+				xc.excludeGraphQLConnections[graphQLConnection{from: k, to: item}] = graphQLExcludeModeOneWay
+			}
+		}
+	}
+	return nil
+}
+
+func (xc *xoConfigType) IsGraphQLConnectionExcluded(from string, to string) bool {
+	mode1 := xc.excludeGraphQLConnections[graphQLConnection{from: from, to: to}]
+	mode2 := xc.excludeGraphQLConnections[graphQLConnection{from: to, to: from}]
+	mode3 := xc.excludeGraphQLConnections[graphQLConnection{from: from, to: "*"}]
+	mode4 := xc.excludeGraphQLConnections[graphQLConnection{from: to, to: "*"}]
+	return mode1 == graphQLExcludeModeOneWay || mode1 == graphQLExcludeModeBothWay || mode2 == graphQLExcludeModeBothWay ||
+		mode3 == graphQLExcludeModeOneWay || mode3 == graphQLExcludeModeBothWay || mode4 == graphQLExcludeModeBothWay
 }
 
 var XoConfig xoConfigType

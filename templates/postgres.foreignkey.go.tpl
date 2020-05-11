@@ -4,13 +4,13 @@
 
 type I{{ .Name }} interface {
 {{- range .ManyToOneKeys }}
-{{- if ne .CallFuncName "" }}
+{{- if and (ne .CallFuncName "") (ne (.Type.IsGraphQLConnectionExcluded .RefType.Table.TableName) true) }}
     {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) (*entities.{{ .RefType.Name }}, error)
 {{- end }}
 {{- end }}
 
 {{- range .OneToManyKeys }}
-{{- if ne .RevertCallFuncName "" }}
+{{- if and (ne .RevertCallFuncName "") (ne (.RefType.IsGraphQLConnectionExcluded .Type.Table.TableName) true) }}
 {{- if .IsUnique }}
     {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (*entities.{{ .Type.Name }}, error)
 {{- else }}
@@ -26,7 +26,7 @@ type {{ .Name }} struct {
     {{- end }}
 
     {{- range .ManyToOneKeys }}
-    {{- if ne .CallFuncName "" }}
+    {{- if and (ne .CallFuncName "") (ne (.Type.IsGraphQLConnectionExcluded .RefType.Table.TableName) true) }}
         {{ lowerfirst .FuncName }}Loader *util.Loader
     {{- end }}
     {{- end }}
@@ -39,7 +39,7 @@ func Init{{ .Name }}({{- range $k, $v := .DependOnRepo }}{{ $v }} I{{ $v }}, {{-
         {{- range $k, $v := .DependOnRepo }}{{ $v }}: {{ $v }},{{- end }}
 
         {{- range .ManyToOneKeys }}
-        {{- if ne .CallFuncName "" }}
+        {{- if and (ne .CallFuncName "") (ne (.Type.IsGraphQLConnectionExcluded .RefType.Table.TableName) true) }}
             {{ lowerfirst .FuncName }}Loader: util.NewLoader(
                 func(ctx context.Context, filter util.Filter) (list []interface{}, e error) {
                     result, err := {{ .RefType.RepoName }}.FindAll{{ .RefType.Name }}(ctx, filter.(*entities.{{ .RefType.Name }}Filter), nil)
@@ -58,7 +58,7 @@ func Init{{ .Name }}({{- range $k, $v := .DependOnRepo }}{{ $v }} I{{ $v }}, {{-
 }
 
 {{- range .ManyToOneKeys }}
-{{- if ne .CallFuncName "" }}
+{{- if and (ne .CallFuncName "") (ne (.Type.IsGraphQLConnectionExcluded .RefType.Table.TableName) true) }}
 func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *entities.{{ .Type.Name }}, filter *entities.{{ .RefType.Name }}Filter) (result *entities.{{ .RefType.Name }}, err error) {
     if obj == nil {
         return result, nil
@@ -80,9 +80,8 @@ func ({{ $shortRepo }} *{{ $name }}) {{ .FuncName }}(ctx context.Context, obj *e
 }
 {{- end }}
 {{ end }}
-
 {{- range .OneToManyKeys }}
-{{- if ne .RevertCallFuncName "" }}
+{{- if and (ne .RevertCallFuncName "") (ne (.RefType.IsGraphQLConnectionExcluded .Type.Table.TableName) true) }}
 {{- if .IsUnique }}
 func ({{ $shortRepo }} *{{ $name }}) {{ .RevertFuncName }}(ctx context.Context, obj *entities.{{ .RefType.Name }}, filter *entities.{{ .Type.Name }}Filter) (*entities.{{ .Type.Name }}, error) {
     if obj ==  nil {

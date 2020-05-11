@@ -146,9 +146,9 @@ func parseXoConfigFile(args *internal.ArgType) {
 	if err != nil {
 		return
 	}
-	err = yaml.Unmarshal(data, &internal.XoConfig)
+	err = internal.XoConfig.Load(data)
 	if err != nil {
-		return
+		panic(err)
 	}
 }
 
