@@ -241,6 +241,7 @@ func (l *List{{ .Name }}) Filter(f func (item {{ .Name }}) bool) (res List{{ .Na
         }
     }
     res.TotalCount = len(res.Data)
+    return res
 }
 
 func (l *List{{ .Name }}) Find(f func (item {{ .Name }}) bool) (res {{ .Name }}, found bool) {
