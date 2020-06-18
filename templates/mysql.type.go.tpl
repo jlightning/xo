@@ -234,3 +234,21 @@ func (l *List{{ .Name }}) GetInterfaceItems() []interface{} {
 	return arr
 }
 
+func (l *List{{ .Name }}) Filter(f func (item {{ .Name }}) bool) (res List{{ .Name }}) {
+    for _, item := range l.Data {
+        if f(item) {
+            res.Data = append(res.Data, item)
+        }
+    }
+    res.TotalCount = len(res.Data)
+}
+
+func (l *List{{ .Name }}) Find(f func (item {{ .Name }}) bool) (res {{ .Name }}, found bool) {
+    for _, item := range l.Data {
+        if f(item) {
+            return item, true
+        }
+    }
+    return {{ .Name }}{}, false
+}
+
