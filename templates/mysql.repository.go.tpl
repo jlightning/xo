@@ -376,7 +376,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     qb := sq.Update("`{{ $table }}`").Set("active", false)
     {{ else }}
     {{- if .DoesTableGenAuditLogsTable }}
-    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, id, Delete); err != nil {
         return false, err
     }
     {{ end }}
