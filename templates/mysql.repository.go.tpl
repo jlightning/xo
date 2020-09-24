@@ -96,12 +96,6 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 		return nil, err
 	}
 
-    {{ if .DoesTableGenAuditLogsTable }}
-    if err = {{ $shortRepo }}.InsertAuditLog(ctx, int(id), Insert); err != nil {
-        return nil, err
-    }
-    {{- end }}
-
 	new{{ $short }} := entities.{{ .Name }}{}
 
 	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
@@ -176,6 +170,26 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	if err != nil {
 		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
 	}
+
+	{{ if .DoesTableGenAuditLogsTable }}
+        if err = {{ $shortRepo }}.InsertAuditLog(ctx, int(id), Insert); err != nil {
+            return 0, err
+        }
+    {{- end }}
+
+	{{ if .DoesTableGenAuditLogsTableV2 }}
+	    new{{ $short }} := entities.{{ .Name }}{}
+
+	    err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+	    if err != nil {
+	        return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+	    }
+
+	    err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", int(id), Insert, new{{ $short }})
+	    if err != nil {
+            return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+        }
+	{{- end }}
 
     return id, nil
 }
@@ -258,13 +272,23 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 
         result := entities.{{ .Name }}{}
         err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
+        if err != nil {
+            return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+        }
 
         {{- if .DoesTableGenAuditLogsTable }}
         if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $primaryKey.Name }}, Update); err != nil {
             return nil, err
         }
         {{ end }}
-        return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+
+        {{- if .DoesTableGenAuditLogsTableV2 }}
+            err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $primaryKey.Name }}, Update, result)
+            if err != nil {
+                return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+            }
+        {{- end }}
+        return &result, nil
 	}
 
     // Update updates the {{ .Name }} in the database.
@@ -316,13 +340,23 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 
             result := entities.{{ .Name }}{}
             err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
+            if err != nil {
+                return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+            }
 
             {{- if .DoesTableGenAuditLogsTable }}
             if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Update); err != nil {
                 return nil, err
             }
             {{ end }}
-            return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+
+            {{- if .DoesTableGenAuditLogsTableV2 }}
+                err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $short }}.{{ $primaryKey.Name }}, Update, result)
+                if err != nil {
+                    return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+                }
+            {{- end }}
+            return &result, nil
     	}
 {{ else }}
 	// Update statements omitted due to lack of fields other than primary key
@@ -365,6 +399,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     }
     {{- end }}
     {{- end }}
+
+    {{- if .DoesTableGenAuditLogsTableV2 }}
+        err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $short }}.{{ $primaryKey.Name }}, Delete, nil)
+        if err != nil {
+            return errors.Wrap(err, "error in {{ .RepoName }}")
+        }
+    {{- end }}
     return errors.Wrap(err, "error in {{ .RepoName }}")
 }
 
@@ -396,6 +437,13 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
         return false, errors.Wrap(err, "error in {{ .RepoName }}")
     }
     {{- end }}
+    {{- end }}
+
+    {{- if .DoesTableGenAuditLogsTableV2 }}
+        err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", id, Delete, nil)
+        if err != nil {
+            return false, errors.Wrap(err, "error in {{ .RepoName }}")
+        }
     {{- end }}
     return err == nil, errors.Wrap(err, "error in {{ .RepoName }}")
 }

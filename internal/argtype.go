@@ -183,6 +183,8 @@ type xoConfigType struct {
 	GenApprovalTable  map[string]approvalTable `yaml:"gen_approval_table"`
 	GenAuditLogsTable map[string]struct {
 	} `yaml:"gen_audit_logs_table"`
+	GenAuditLogsTableV2 map[string]struct {
+	} `yaml:"gen_audit_logs_table_v2"`
 	ExcludeTable []string `yaml:"exclude_table"`
 	CustomField  map[string][]struct {
 		ColumnName      string `yaml:"column_name"`
@@ -227,6 +229,13 @@ func (xc *xoConfigType) GetApprovalTableAdditionalFields(tableName string) []app
 
 func (xc *xoConfigType) DoesTableGenAuditLogs(tableName string) bool {
 	if _, ok := xc.GenAuditLogsTable[tableName]; ok {
+		return true
+	}
+	return false
+}
+
+func (xc *xoConfigType) DoesTableGenAuditLogsV2(tableName string) bool {
+	if _, ok := xc.GenAuditLogsTableV2[tableName]; ok {
 		return true
 	}
 	return false

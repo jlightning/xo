@@ -158,3 +158,19 @@ func AddPaginationWithSortFieldMap(qb *sq.SelectBuilder, pagination *entities.Pa
 	}
 	return qb, nil
 }
+
+func addAuditLog(ctx context.Context, db db_manager.IDb, table string, tableID int, action AuditLogAction, data interface{}) error {
+	user, userID := context_manager.GetUserContext(ctx), (*int)(nil)
+	if user != nil {
+		userID = &user.ID
+	}
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	qb := sq.Insert("audit_log").Columns("entity_name", "entity_id", "audit_fk_user", "audit_action", "data").
+		Values(table, tableID, userID, action, dataJson)
+	_, err = db.Exec(ctx, qb)
+	return err
+}

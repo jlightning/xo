@@ -190,6 +190,10 @@ func (t *Type) DoesTableGenAuditLogsTable() bool {
 	return XoConfig.DoesTableGenAuditLogs(t.Table.TableName)
 }
 
+func (t *Type) DoesTableGenAuditLogsTableV2() bool {
+	return XoConfig.DoesTableGenAuditLogsV2(t.Table.TableName)
+}
+
 func (t *Type) IsApprovalTableOnDuplicateUpdate() bool {
 	if XoConfig.DoesTableGenApprovalTable(t.Table.TableName) && XoConfig.GenApprovalTable[t.Table.TableName].UpdateOnDuplicate {
 		return true
