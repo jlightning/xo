@@ -11,5 +11,5 @@ import (
 )
 
 func main() {
-	cmd.Excecute()
+	cmd.Execute()
 }

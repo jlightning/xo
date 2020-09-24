@@ -32,7 +32,7 @@ import (
 	"github.com/jlightning/xo/models"
 )
 
-func Excecute() {
+func Execute() {
 	// circumvent all logic to just determine if xo was built with oracle
 	// support
 	if len(os.Args) == 2 && os.Args[1] == "--has-oracle-support" {
