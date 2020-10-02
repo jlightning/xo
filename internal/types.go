@@ -30,6 +30,8 @@ const (
 	WireTemplate
 	ApprovalMigrationTemplate
 	AuditLogsMigrationTemplate
+	RepositoryErrorCommonTemplate
+	RepositoryErrorTemplate
 )
 
 // String returns the name for the associated template type.
@@ -78,6 +80,10 @@ func (tt TemplateType) String() string {
 		s = "approval.migration"
 	case AuditLogsMigrationTemplate:
 		s = "audit.migration"
+	case RepositoryErrorTemplate:
+		s = "repository.error"
+	case RepositoryErrorCommonTemplate:
+		s = "repository.error.common"
 	default:
 		panic("unknown TemplateType")
 	}

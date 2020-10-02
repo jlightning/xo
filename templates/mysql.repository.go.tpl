@@ -99,8 +99,14 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}WithSuffix(ctx context
 	new{{ $short }} := entities.{{ .Name }}{}
 
 	err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
+	if err != nil {
+	    if errors.Cause(err) == sql.ErrNoRows {
+            return nil, errorx.ErrRepoDataNotFoundAfterInsert.WithCause(err).Build()
+        }
+        return nil, err
+	}
 
-	return &new{{ $short }}, errors.Wrap(err, "error in {{ .RepoName }}")
+	return &new{{ $short }}, nil
 }
 
 func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.Context, {{ $short }} entities.{{ .Name }}Create, suffix sq.Sqlizer) (int64, error) {
@@ -132,7 +138,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	// run query
 	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
-		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, err
 	}
 
 {{ else }}
@@ -161,14 +167,14 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 	// run query
 	res, err := {{ $shortRepo }}.Db.Exec(ctx, qb)
 	if err != nil {
-		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, err
 	}
 {{ end }}
 
     // retrieve id
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+		return 0, err
 	}
 
 	{{ if .DoesTableGenAuditLogsTable }}
@@ -182,12 +188,15 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Insert{{ .Name }}IDResult(ctx context.C
 
 	    err = {{ $shortRepo }}.Db.Get(ctx, &new{{ $short }}, sq.Expr("SELECT * FROM `{{ $table }}` WHERE `{{ .PrimaryKey.Col.ColumnName }}` = ?", id))
 	    if err != nil {
-	        return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+	        if errors.Cause(err) == sql.ErrNoRows {
+                return 0, errorx.ErrRepoDataNotFoundAfterInsert.WithCause(err).Build()
+            }
+	        return 0, err
 	    }
 
 	    err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", int(id), Insert, new{{ $short }})
 	    if err != nil {
-            return 0, errors.Wrap(err, "error in {{ .RepoName }}")
+            return 0, err
         }
 	{{- end }}
 
@@ -256,7 +265,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
         // run query
         _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
         if err != nil {
-            return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+            return nil, err
         }
 
         selectQb := sq.Select("*").From("`{{ $table }}`")
@@ -273,7 +282,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
         result := entities.{{ .Name }}{}
         err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
         if err != nil {
-            return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+            if errors.Cause(err) == sql.ErrNoRows {
+                return nil, errorx.ErrRepoDataNotFoundAfterUpdate.WithCause(err).Build()
+            }
+            return nil, err
         }
 
         {{- if .DoesTableGenAuditLogsTable }}
@@ -285,7 +297,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
         {{- if .DoesTableGenAuditLogsTableV2 }}
             err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $primaryKey.Name }}, Update, result)
             if err != nil {
-                return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+                return &result, err
             }
         {{- end }}
         return &result, nil
@@ -324,7 +336,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
             // run query
             _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
             if err != nil {
-                return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+                return nil, err
             }
 
             selectQb := sq.Select("*").From("`{{ $table }}`")
@@ -341,7 +353,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
             result := entities.{{ .Name }}{}
             err = {{ $shortRepo }}.Db.Get(ctx, &result, selectQb)
             if err != nil {
-                return nil, errors.Wrap(err, "error in {{ .RepoName }}")
+                if errors.Cause(err) == sql.ErrNoRows {
+                    return nil, errorx.ErrRepoDataNotFoundAfterUpdate.WithCause(err).Build()
+                }
+                return nil, err
             }
 
             {{- if .DoesTableGenAuditLogsTable }}
@@ -353,7 +368,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
             {{- if .DoesTableGenAuditLogsTableV2 }}
                 err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $short }}.{{ $primaryKey.Name }}, Update, result)
                 if err != nil {
-                    return &result, errors.Wrap(err, "error in {{ .RepoName }}")
+                    return &result, err
                 }
             {{- end }}
             return &result, nil
@@ -390,12 +405,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     // run query
     _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
     if err != nil {
-        return errors.Wrap(err, "error in {{ .RepoName }}")
+        return err
     }
     {{- if .HasActiveField }}
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
-        return errors.Wrap(err, "error in {{ .RepoName }}")
+        return err
     }
     {{- end }}
     {{- end }}
@@ -403,10 +418,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, 
     {{- if .DoesTableGenAuditLogsTableV2 }}
         err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $short }}.{{ $primaryKey.Name }}, Delete, nil)
         if err != nil {
-            return errors.Wrap(err, "error in {{ .RepoName }}")
+            return err
         }
     {{- end }}
-    return errors.Wrap(err, "error in {{ .RepoName }}")
+    return err
 }
 
 {{ if eq ( len .PrimaryKeyFields ) 1 }}
@@ -429,12 +444,12 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     // run query
     _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
     if err != nil {
-        return false, errors.Wrap(err, "error in {{ .RepoName }}")
+        return false, err
     }
     {{- if .HasActiveField }}
     {{- if .DoesTableGenAuditLogsTable }}
     if err = {{ $shortRepo }}.InsertAuditLog(ctx, id, Delete); err != nil {
-        return false, errors.Wrap(err, "error in {{ .RepoName }}")
+        return false, err
     }
     {{- end }}
     {{- end }}
@@ -442,10 +457,10 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name 
     {{- if .DoesTableGenAuditLogsTableV2 }}
         err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", id, Delete, nil)
         if err != nil {
-            return false, errors.Wrap(err, "error in {{ .RepoName }}")
+            return false, err
         }
     {{- end }}
-    return err == nil, errors.Wrap(err, "error in {{ .RepoName }}")
+    return err == nil, err
 }
 {{- end }}
 
@@ -526,17 +541,17 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}(ctx context.Context,
 func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}WithSuffix(ctx context.Context, filter *entities.{{ .Name }}Filter, pagination *entities.Pagination, suffixes ...sq.Sqlizer) (list entities.List{{ .Name }}, err error) {
     qb, err := {{ $shortRepo }}.FindAll{{ .Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
     if err != nil {
-        return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
+        return entities.List{{ .Name }}{}, err
     }
     qb, err = {{ $shortRepo }}.AddPagination(ctx, qb, pagination)
     if err != nil {
-        return entities.List{{ .Name }}{}, errors.Wrap(err, "error in {{ .RepoName }}")
+        return entities.List{{ .Name }}{}, err
     }
 
     err = {{ $shortRepo }}.Db.Select(ctx, &list.Data, qb)
 
     if err != nil {
-        return list, errors.Wrap(err, "error in {{ .RepoName }}")
+        return list, err
     }
 
     if pagination == nil || pagination.PerPage == nil || pagination.Page == nil {
@@ -555,7 +570,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}WithSuffix(ctx contex
 
     list.TotalCount = listMeta.Count
 
-    return list, errors.Wrap(err, "error in {{ .RepoName }}")
+    return list, err
 }
 {{- end }}
 
@@ -563,7 +578,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) FindAll{{ .Name }}WithSuffix(ctx contex
 func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark *string) (bool, error) {
     user := context_manager.GetUserContext(ctx)
     if user == nil {
-        return false, consts.ErrUnauthorized
+        return false, errorx.ErrUnauthorized.Build()
     }
 
     ctx, newTxCreated, tx, err := db_manager.StartTransaction(ctx, {{ $shortRepo }}.Db.(db_manager.IDbTxBeginner))
@@ -581,7 +596,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
         return false, err
     }
     if draft.Status != entities.{{ .Name }}DraftStatusPending {
-        return false, errors.New("invalid draft status")
+        return false, err
     }
 
     newStatus := entities.{{ .Name }}DraftStatusApproved
@@ -705,7 +720,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Approve{{ .Name }}ChangeRequest(ctx con
 func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
     user := context_manager.GetUserContext(ctx)
     if user == nil {
-        return false, consts.ErrUnauthorized
+        return false, errorx.ErrUnauthorized.Build()
     }
     fkApprover := util.NewNullInt64(int64(user.ID))
 
@@ -760,7 +775,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Reject{{ .Name }}ChangeRequest(ctx cont
 func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx context.Context, IDDraft int, remark string) (bool, error) {
     user := context_manager.GetUserContext(ctx)
     if user == nil {
-        return false, consts.ErrUnauthorized
+        return false, errorx.ErrUnauthorized.Build()
     }
     fkUser := util.NewNullInt64(int64(user.ID))
 
@@ -815,7 +830,7 @@ func ({{ $shortRepo }} *{{ .RepoName }}) Cancel{{ .Name }}ChangeRequest(ctx cont
 func ({{ $shortRepo }} *{{ .RepoName }}) Submit{{ .Name }}Draft(ctx context.Context, IDDraft int, remark *string) (bool, error) {
     user := context_manager.GetUserContext(ctx)
     if user == nil {
-        return false, consts.ErrUnauthorized
+        return false, errorx.ErrUnauthorized.Build()
     }
     fkUser := util.NewNullInt64(int64(user.ID))
 

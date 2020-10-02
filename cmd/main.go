@@ -1,6 +1,5 @@
 package cmd
 
-
 //go:generate ./tpl.sh
 //go:generate ./gen.sh models
 
@@ -99,6 +98,12 @@ func Execute() {
 	//}
 
 	err = args.ExecuteTemplate(internal.RepositoryCommonTemplate, "common", "", args)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = args.ExecuteTemplate(internal.RepositoryErrorCommonTemplate, "repository", "", args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -323,6 +328,9 @@ func getFileName(args *internal.ArgType, t *internal.TBuf) (string, string, stri
 		pkg = "main"
 	} else if t.TemplateType == internal.ApprovalMigrationTemplate || t.TemplateType == internal.AuditLogsMigrationTemplate {
 		filename = "migrations/" + filename
+	} else if t.TemplateType == internal.RepositoryErrorTemplate || t.TemplateType == internal.RepositoryErrorCommonTemplate {
+		pkg = "errorx"
+		filename = "errorx/" + filename
 	} else {
 		pkg = "entities"
 		filename = "entities/" + filename
@@ -369,6 +377,10 @@ func getFile(args *internal.ArgType, filename string, pkg string) (*os.File, err
 		f.WriteString("# " + generatedText)
 	case strings.HasSuffix(filename, ".sql"):
 		f.WriteString("-- " + generatedText)
+	}
+
+	if strings.HasSuffix(filename, "errorx/repository.xo.go") {
+		f.WriteString("// +build errgeninject\n\n")
 	}
 
 	if strings.HasSuffix(filename, ".go") {
