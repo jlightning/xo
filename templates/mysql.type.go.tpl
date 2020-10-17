@@ -192,7 +192,7 @@ func (u *{{ .Name }}Update) To{{ .Name }}Create() (res {{ .Name }}Create, err er
         if (u.{{ .Name }} != nil) {
             res.{{ .Name }} = {{- if or .Col.NotNull (ne .Col.IsEnum true) }}*{{ end }}u.{{ .Name }}
         } {{ if .Col.NotNull }} else {
-            return res, errors.New("{{ .Col.ColumnName }} is required")
+            return res, errorx.ErrColumnRequiredForDTOConversion.AddExtra("entity", "{{ $name }}").AddExtra("field", "{{ .Name }}").Build()
         } {{ end }}
         {{- end }}
     {{- end }}
