@@ -1,2 +1,6 @@
 var ErrRepoDataNotFoundAfterInsert = errgen.NewUnexpectedErr("Something went wrong")
 var ErrRepoDataNotFoundAfterUpdate = errgen.NewUnexpectedErr("Something went wrong")
+var ErrCannotParseDate = errgen.NewBadRequestErr("Cannot parse date")
+var ErrCannotParseBool = errgen.NewBadRequestErr("Cannot parse bool")
+var ErrCannotParsePoint = errgen.NewBadRequestErr("Cannot parse point")
+var ErrCannotParseMap = errgen.NewBadRequestErr("Cannot parse map")

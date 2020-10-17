@@ -15,7 +15,7 @@ func UnmarshalDatetime(v interface{}) (time.Time, error) {
 		layout = "15:04:05"
 		return time.ParseInLocation(layout, str, time.Local)
 	}
-	return time.Time{}, errors.New("time should be a unix timestamp")
+	return time.Time{}, errorx.ErrCannotParseDate.Build()
 }
 
 func MarshalDatetime(t time.Time) graphql.Marshaler {
@@ -31,7 +31,7 @@ func UnmarshalIntBool(v interface{}) (int8, error) {
 		}
 		return 0, nil
 	}
-	return 0, errors.New("value is not boolean")
+	return 0, errorx.ErrCannotParseBool.Build()
 }
 
 func MarshalIntBool(v int8) graphql.Marshaler {
@@ -152,7 +152,7 @@ func UnmarshalNullTime(v interface{}) (mysql.NullTime, error) {
 		}
 		return nt, err
 	}
-	return nt, errors.New("time should be a unix timestamp")
+	return nt, errorx.ErrCannotParseDate.Build()
 }
 
 func MarshalMap(t map[string]interface{}) graphql.Marshaler {
@@ -171,7 +171,7 @@ func UnmarshalMap(v interface{}) (map[string]interface{}, error) {
 		err := json.Unmarshal([]byte(str), &nt)
 		return nt, err
 	}
-	return nt, errors.New("map should be string")
+	return nt, errorx.ErrCannotParseMap.Build()
 }
 
 func UnmarshalPoint(v interface{}) (geo.Point, error) {
@@ -181,13 +181,13 @@ func UnmarshalPoint(v interface{}) (geo.Point, error) {
 	}
 	if value, ok := v.([]interface{}); ok {
 		if len(value) != 2 {
-			return point, errors.New("invalid location")
+			return point, errorx.ErrCannotParsePoint.Build()
 		}
 		point.SetLat(value[0].(float64))
 		point.SetLng(value[1].(float64))
 		return point, nil
 	}
-	return point, errors.New("value is not location")
+	return point, errorx.ErrCannotParsePoint.Build()
 }
 
 func MarshalPnit(v geo.Point) graphql.Marshaler {
