@@ -540,8 +540,6 @@ func writeTypes(args *internal.ArgType) error {
 		fmt.Println(err.Error())
 	}
 
-	return nil
-
 	// process written files with goimports
 	return exec.Command("goimports", params...).Run()
 }
