@@ -553,8 +553,13 @@ func writeTypes(args *internal.ArgType) error {
 		c = append([]string{"-w"}, c...)
 
 		// process written files with goimports
-		return exec.Command("goimports", c...).Run()
+		err := exec.Command("goimports", c...).Run()
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func tryMergeGqlgenYml(args *internal.ArgType, fileWr fileWrite) (fileWrite, error) {
