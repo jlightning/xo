@@ -541,7 +541,7 @@ func writeTypes(args *internal.ArgType) error {
 	//}
 
 	fmt.Println("Run Gen-err")
-	err = exec.Command("do.sh", "gen-err").Run()
+	err = exec.Command("./do.sh", "gen-err").Run()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
