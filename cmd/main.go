@@ -29,6 +29,7 @@ import (
 	"github.com/jlightning/xo/internal"
 	_ "github.com/jlightning/xo/loaders"
 	"github.com/jlightning/xo/models"
+	"github.com/thoas/go-funk"
 )
 
 func Execute() {
@@ -509,10 +510,13 @@ func writeTypes(args *internal.ArgType) error {
 
 	// build goimports parameters, closing files
 	params := []string{"-w"}
+	var fileNames []string
 	for k, f := range files {
 		if strings.HasSuffix(f.Name(), ".go") {
 			params = append(params, k)
 		}
+
+		fileNames = append(fileNames, k)
 
 		// close
 		err = f.Close()
@@ -520,6 +524,8 @@ func writeTypes(args *internal.ArgType) error {
 			return err
 		}
 	}
+
+	chunks := funk.Chunk(fileNames, 10).([][]string)
 
 	//fmt.Println("--- Repositories: ")
 	//for _, v := range args.NewTemplateFuncs()["reponames"].(func() []string)() {
@@ -541,10 +547,14 @@ func writeTypes(args *internal.ArgType) error {
 		fmt.Println(err.Error())
 	}
 
-	fmt.Println("Run Goimports")
+	for _, c := range chunks {
+		fmt.Println("Run Goimports for chunks: %s", strings.Join(c, ", "))
 
-	// process written files with goimports
-	return exec.Command("goimports", params...).Run()
+		c = append([]string{"-w"}, c...)
+
+		// process written files with goimports
+		return exec.Command("goimports", c...).Run()
+	}
 }
 
 func tryMergeGqlgenYml(args *internal.ArgType, fileWr fileWrite) (fileWrite, error) {
