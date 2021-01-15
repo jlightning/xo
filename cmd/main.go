@@ -514,9 +514,8 @@ func writeTypes(args *internal.ArgType) error {
 	for k, f := range files {
 		if strings.HasSuffix(f.Name(), ".go") {
 			params = append(params, k)
+			fileNames = append(fileNames, k)
 		}
-
-		fileNames = append(fileNames, k)
 
 		// close
 		err = f.Close()
