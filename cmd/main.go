@@ -498,8 +498,6 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
-	fmt.Println("finish write file")
-
 	jsonData, err = json.MarshalIndent(fileHashes, "", "  ")
 	if err != nil {
 		return err
@@ -537,6 +535,7 @@ func writeTypes(args *internal.ArgType) error {
 	//	}
 	//}
 
+	fmt.Println("Run Gen-err")
 	err = exec.Command("./do.sh", "gen-err").Run()
 	if err != nil {
 		fmt.Println(err.Error())
