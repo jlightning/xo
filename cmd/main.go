@@ -498,6 +498,8 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
+	fmt.Println("finish write file")
+
 	jsonData, err = json.MarshalIndent(fileHashes, "", "  ")
 	if err != nil {
 		return err
