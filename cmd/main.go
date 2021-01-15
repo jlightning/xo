@@ -548,7 +548,7 @@ func writeTypes(args *internal.ArgType) error {
 
 	for idx, c := range chunks {
 		fmt.Println("-------------------------------------")
-		fmt.Printf("Goimport progress: %d/%d", idx+1, len(chunks))
+		fmt.Printf("Goimport progress: %d/%d\n", idx+1, len(chunks))
 		fmt.Printf("Run Goimports for chunks: %s\n", strings.Join(c, " "))
 
 		c = append([]string{"-w"}, c...)
