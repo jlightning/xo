@@ -524,7 +524,7 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
-	chunks := funk.Chunk(fileNames, 10).([][]string)
+	chunks := funk.Chunk(fileNames, 20).([][]string)
 
 	//fmt.Println("--- Repositories: ")
 	//for _, v := range args.NewTemplateFuncs()["reponames"].(func() []string)() {
@@ -546,7 +546,9 @@ func writeTypes(args *internal.ArgType) error {
 		fmt.Println(err.Error())
 	}
 
-	for _, c := range chunks {
+	for idx, c := range chunks {
+		fmt.Println("-------------------------------------")
+		fmt.Printf("Goimport progress: %d/%d", idx+1, len(chunks))
 		fmt.Printf("Run Goimports for chunks: %s\n", strings.Join(c, " "))
 
 		c = append([]string{"-w"}, c...)
