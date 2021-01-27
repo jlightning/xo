@@ -25,6 +25,16 @@ func ({{ $short }} {{ $type }}) String() string {
 	return enumVal
 }
 
+func ({{ $short }} {{ $type }}) Format(st fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		switch {
+		case st.Flag('#'):
+			fmt.Fprintf(st, {{ $short }}.String())
+		}
+	}
+}
+
 // MarshalGQL implements the graphql.Marshaler interface
 func ({{ $short }} {{ $type }}) MarshalGQL(w io.Writer) {
 	w.Write([]byte(`"` + {{ $short }}.String() + `"`))
