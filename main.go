@@ -5,7 +5,7 @@ package main
 
 import (
 	"github.com/jlightning/xo/cmd"
-	_ "github.com/xo/xoutil"
+	_ "github.com/jlightning/xo/xoutil"
 
 	_ "github.com/jlightning/xo/loaders"
 )

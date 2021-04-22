@@ -24,7 +24,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/xo/dburl"
-	_ "github.com/xo/xoutil"
+	_ "github.com/jlightning/xo/xoutil"
 
 	"github.com/jlightning/xo/internal"
 	_ "github.com/jlightning/xo/loaders"
