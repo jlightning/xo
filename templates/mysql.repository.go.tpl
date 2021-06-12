@@ -241,14 +241,20 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 	func ({{ $shortRepo }} *{{ .RepoName }}) Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error) {
 		var err error
 
-        updateMap := map[string]interface{}{}
-        {{- range .Fields }}
-            {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
-            if ({{ $short }}.{{ .Name }} != nil) {
-                updateMap["`{{ .Col.ColumnName }}`"] = *{{ $short }}.{{ .Name }}
-            }
+		fields := map[string]interface{}{
+		    {{- range .Fields }}
+                {{- if and (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") (ne .Name $primaryKey.Name) (ne .Col.IsGenerated true) }}
+                    "`{{ .Col.ColumnName }}`": {{ $short }}.{{ .Name }},
+                {{- end }}
             {{- end }}
-        {{- end }}
+		}
+
+        updateMap := map[string]interface{}{}
+		for fieldName, fieldValue := range fields {
+		    if !isInterfaceNil(fieldValue) {
+		        updateMap[fieldName] = fieldValue
+		    }
+		}
 
 		{{ if gt ( len .PrimaryKeyFields ) 1 }}
 			// sql query with composite primary key

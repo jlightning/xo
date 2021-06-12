@@ -174,3 +174,7 @@ func addAuditLog(ctx context.Context, db db_manager.IDb, table string, tableID i
 	_, err = db.Exec(ctx, qb)
 	return err
 }
+
+func isInterfaceNil(a interface{}) bool {
+    return a == nil || (reflect.ValueOf(a).Kind() == reflect.Ptr && reflect.ValueOf(a).IsNil())
+}
