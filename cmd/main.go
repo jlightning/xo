@@ -16,15 +16,18 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/alexflint/go-arg"
 	"github.com/knq/snaker"
+	"github.com/mailgun/holster/syncutil"
 	"gopkg.in/yaml.v2"
 
-	"github.com/xo/dburl"
 	_ "github.com/jlightning/xo/xoutil"
+	"github.com/xo/dburl"
 
 	"github.com/jlightning/xo/internal"
 	_ "github.com/jlightning/xo/loaders"
@@ -524,7 +527,7 @@ func writeTypes(args *internal.ArgType) error {
 		}
 	}
 
-	chunks := funk.Chunk(fileNames, 20).([][]string)
+	chunks := funk.Chunk(fileNames, 10).([][]string)
 
 	//fmt.Println("--- Repositories: ")
 	//for _, v := range args.NewTemplateFuncs()["reponames"].(func() []string)() {
@@ -546,18 +549,34 @@ func writeTypes(args *internal.ArgType) error {
 		fmt.Println(err.Error())
 	}
 
-	for idx, c := range chunks {
-		fmt.Println("-------------------------------------")
-		fmt.Printf("Goimport progress: %d/%d\n", idx+1, len(chunks))
-		fmt.Printf("Run Goimports for chunks: %s\n", strings.Join(c, " "))
+	fmtLock := sync.Mutex{}
+	finished := 0
+	wg := syncutil.NewFanOut(runtime.NumCPU())
+	for idx := range chunks {
+		wg.Run(func(i interface{}) error {
+			idx := i.(int)
+			c := chunks[idx]
 
-		c = append([]string{"-w"}, c...)
+			defer func() {
+				fmtLock.Lock()
+				defer fmtLock.Unlock()
+				finished++
 
-		// process written files with goimports
-		err := exec.Command("goimports", c...).Run()
-		if err != nil {
-			return err
-		}
+				fmt.Println("-------------------------------------")
+				fmt.Printf("Goimport progress: %d/%d\n", finished, len(chunks))
+				fmt.Printf("Run Goimports finished for chunks: %s\n", strings.Join(c, " "))
+			}()
+
+			c = append([]string{"-w"}, c...)
+
+			// process written files with goimports
+			return exec.Command("goimports", c...).Run()
+		}, idx)
+	}
+
+	errs := wg.Wait()
+	if len(errs) > 0 {
+		return errs[0]
 	}
 
 	return nil
