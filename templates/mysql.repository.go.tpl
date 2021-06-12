@@ -19,6 +19,7 @@ type I{{ .RepoName }} interface {
     Update{{ .Name }}ByFields(ctx context.Context, {{- range .PrimaryKeyFields }}{{ .Name }} {{ retype .Type }}{{- end }}, {{ $short }} entities.{{ .Name }}Update) (*entities.{{ .Name }}, error)
     Update{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) (*entities.{{ .Name }}, error)
     {{- end }}
+    Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error
     {{- if eq ( len .PrimaryKeyFields ) 1 }}
     Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error)
     {{- end }}
@@ -375,6 +376,53 @@ func ({{ $shortRepo }} *{{ .RepoName }}) InsertAuditLog(ctx context.Context, id 
 {{ else }}
 	// Update statements omitted due to lack of fields other than primary key
 {{ end }}
+
+// Delete deletes the {{ .Name }} from the database.
+func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}(ctx context.Context, {{ $short }} entities.{{ .Name }}) error {
+	var err error
+
+    {{ if .HasActiveField }}
+    qb := sq.Update("`{{ $table }}`").Set("active", false)
+    {{ else }}
+    {{- if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+        return err
+    }
+    {{ end }}
+    qb := sq.Delete("`{{ $table }}`")
+    {{ end -}}
+
+	{{- if gt ( len .PrimaryKeyFields ) 1 -}}
+		qb = qb.Where(sq.Eq{
+        {{- range .PrimaryKeyFields }}
+            "`{{ .Col.ColumnName }}`": {{ $short }}.{{ .Name }},
+        {{- end }}
+        })
+	{{- else -}}
+		qb = qb.Where(sq.Eq{"`{{ colname .PrimaryKey.Col}}`": {{ $short }}.{{ .PrimaryKey.Name }}})
+	{{- end }}
+
+    // run query
+    _, err = {{ $shortRepo }}.Db.Exec(ctx, qb)
+    if err != nil {
+        return err
+    }
+    {{- if .HasActiveField }}
+    {{- if .DoesTableGenAuditLogsTable }}
+    if err = {{ $shortRepo }}.InsertAuditLog(ctx, {{ $short }}.{{ $primaryKey.Name }}, Delete); err != nil {
+        return err
+    }
+    {{- end }}
+    {{- end }}
+
+    {{- if .DoesTableGenAuditLogsTableV2 }}
+        err = addAuditLog(ctx, {{ $shortRepo }}.Db, "{{ $table }}", {{ $short }}.{{ $primaryKey.Name }}, Delete, nil)
+        if err != nil {
+            return err
+        }
+    {{- end }}
+    return err
+}
 
 {{ if eq ( len .PrimaryKeyFields ) 1 }}
 func ({{ $shortRepo }} *{{ .RepoName }}) Delete{{ .Name }}By{{ $primaryKey.Name }}(ctx context.Context, id {{ $primaryKey.Type }}) (bool, error) {
