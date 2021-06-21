@@ -180,7 +180,7 @@ type {{ .Name }}Update struct {
 {{- range .Fields }}
 {{- if or (ne .Col.IsVirtualFromConfig true) .Col.IsIncludeInUpdate }}
     {{- if and (or (ne .Col.ColumnName $primaryKey.Col.ColumnName) $tableVar.ManualPk) (ne .Col.ColumnName "created_at") (ne .Col.ColumnName "updated_at") }}
-	{{ .Name }} *{{ retype .Type }} // {{ .Col.ColumnName }}
+	{{ .Name }} *{{ retype .Type }} `json:"{{ .Col.ColumnName }}" {{ if ne .Col.IsVirtualFromConfig true }}db:"{{ .Col.ColumnName }}"{{ end }}` // {{ .Col.ColumnName }}
 	{{- end }}
 {{- end }}
 {{- end }}
