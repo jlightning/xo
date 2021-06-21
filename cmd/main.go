@@ -162,7 +162,7 @@ func parseXoConfigFile(args *internal.ArgType) {
 	}
 	err = internal.XoConfig.Load(data)
 	if err != nil {
-		return
+		panic(err)
 	}
 }
 
