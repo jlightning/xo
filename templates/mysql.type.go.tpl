@@ -192,7 +192,7 @@ func (u *{{ .Name }}Update) To{{ .Name }}Create() (res {{ .Name }}Create, err er
         if (u.{{ .Name }} != nil) {
             res.{{ .Name }} = {{- if or .Col.NotNull (ne .Col.IsEnum true) }}*{{ end }}u.{{ .Name }}
         } {{ if .Col.NotNull }} else {
-            return res, errors.New("{{ .Col.ColumnName }} is required")
+            return res, errorx.ErrColumnRequiredForDTOConversion.AddExtra("entity", "{{ $name }}").AddExtra("field", "{{ .Name }}").Build()
         } {{ end }}
         {{- end }}
     {{- end }}
@@ -232,5 +232,24 @@ func (l *List{{ .Name }}) GetInterfaceItems() []interface{} {
 		arr = append(arr, item)
 	}
 	return arr
+}
+
+func (l *List{{ .Name }}) Filter(f func (item {{ .Name }}) bool) (res List{{ .Name }}) {
+    for _, item := range l.Data {
+        if f(item) {
+            res.Data = append(res.Data, item)
+        }
+    }
+    res.TotalCount = len(res.Data)
+    return res
+}
+
+func (l *List{{ .Name }}) Find(f func (item {{ .Name }}) bool) (res {{ .Name }}, found bool) {
+    for _, item := range l.Data {
+        if f(item) {
+            return item, true
+        }
+    }
+    return {{ .Name }}{}, false
 }
 

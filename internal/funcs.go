@@ -54,7 +54,8 @@ func (a *ArgType) NewTemplateFuncs() template.FuncMap {
 		"convertToNonNull":   a.convertToNonNull,
 		"convertToNull":      a.convertToNull,
 		"upperCaseMysqlType": a.upperCaseMysqlType,
-		"plural": a.plural,
+		"plural":             a.plural,
+		"toEntityName":       a.toEntityName,
 	}
 }
 
@@ -780,6 +781,11 @@ func (a *ArgType) canhavecreatestruct(fields []*Field, primaryKey *Field) bool {
 		}
 	}
 	return false
+}
+
+func (a *ArgType) toEntityName(name string) string {
+	name = strings.Replace(snaker.CamelToSnake(name), "_", " ", -1)
+	return strings.ToUpper(name[0:1]) + name[1:]
 }
 
 func NullBoolToBool(b *bool, defaultValue bool) bool {

@@ -25,6 +25,10 @@ func ({{ $short }} {{ $type }}) String() string {
 	return enumVal
 }
 
+func ({{ $short }} {{ $type }}) GoString() string {
+    return {{ $short }}.String()
+}
+
 // MarshalGQL implements the graphql.Marshaler interface
 func ({{ $short }} {{ $type }}) MarshalGQL(w io.Writer) {
 	w.Write([]byte(`"` + {{ $short }}.String() + `"`))
@@ -35,7 +39,7 @@ func ({{ $short }} *{{ $type }}) UnmarshalGQL(v interface{}) error {
 	if str, ok := v.(string); ok {
 		return {{ $short }}.UnmarshalText([]byte(str))
 	}
-	return fmt.Errorf("enum must be strings")
+	return errorx.ErrInvalidEnumGraphQL.AddExtra("type", "{{ $type }}").Build()
 }
 
 // MarshalText marshals {{ $type }} into text.
@@ -52,7 +56,7 @@ func ({{ $short }} *{{ $type }}) UnmarshalText(text []byte) error {
 {{ end }}
 
 	default:
-		return errors.New("invalid {{ $type }}")
+		return errorx.ErrInvalidEnumGraphQL.AddExtra("type", "{{ $type }}").Build()
 	}
 
 	return nil
@@ -72,7 +76,7 @@ func ({{ $short }} {{ $type }}) Ptr() *{{ $type }} {
 func ({{ $short }} *{{ $type }}) Scan(src interface{}) error {
 	buf, ok := src.([]byte)
 	if !ok {
-	   return errors.New("invalid {{ $type }}")
+	   return errorx.ErrInvalidEnumScan.AddExtra("type", "{{ $type }}").Build()
 	}
 
 	return {{ $short }}.UnmarshalText(buf)

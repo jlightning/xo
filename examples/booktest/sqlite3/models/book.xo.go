@@ -6,7 +6,7 @@ package models
 import (
 	"errors"
 
-	"github.com/xo/xoutil"
+	"github.com/jlightning/xo/xoutil"
 )
 
 // Book represents a row from 'books'.

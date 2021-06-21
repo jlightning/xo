@@ -15,7 +15,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx contex
 	// sql query
     qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
     if err != nil {
-        return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+        return entities.{{ .Type.Name }}{}, err
     }
     {{- range $k, $v := .Fields }}
         qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
@@ -25,7 +25,15 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx contex
 	{{ $short }} := entities.{{ .Type.Name }}{}
 	err = {{ $shortRepo }}.Db.Get(ctx, &{{ $short }}, qb)
     if err != nil {
-        return entities.{{ .Type.Name }}{}, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+        if errors.Cause(err) == sql.ErrNoRows {
+            return entities.{{ .Type.Name }}{}, errorx.ErrRepo{{ .Type.Name }}NotFound.
+                {{ range $k, $v := .Fields }}
+                    AddExtra("{{ .Name }}", {{ goparam $v }}).
+                {{ end }}
+                WithCause(err).
+                Build()
+        }
+        return entities.{{ .Type.Name }}{}, err
     }
 	return {{ $short }}, nil
 }
@@ -38,7 +46,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx contex
 	// sql query
 	qb, err := {{$shortRepo}}.FindAll{{ .Type.Name }}BaseQuery(ctx, filter, "`{{ $table }}`.*", suffixes...)
 	if err != nil {
-        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+        return list, err
     }
 	{{- range $k, $v := .Fields }}
 	    qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
@@ -49,7 +57,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx contex
 
 	// run query
     if err = {{ $shortRepo }}.Db.Select(ctx, &list.Data, qb); err != nil {
-        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+        return list, err
     }
 
     if pagination == nil || pagination.PerPage == nil || pagination.Page == nil {
@@ -68,7 +76,7 @@ func ({{$shortRepo}} *{{ .Type.RepoName }}) {{ .FuncName }}WithSuffix(ctx contex
         qb = qb.Where(sq.Eq{"`{{ $table }}`.`{{ colname .Col }}`": {{ goparam $v }}})
     {{- end }}
     if err = {{ $shortRepo }}.Db.Get(ctx, &listMeta, qb); err != nil {
-        return list, errors.Wrap(err, "error in {{ .Type.RepoName }}")
+        return list, err
     }
 
     list.TotalCount = listMeta.Count

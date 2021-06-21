@@ -1,3 +1,4 @@
+{{- if or (ne (index .Fields 0).Col.IsEnum true) (index .Fields 0).Col.NotNull }}
 {{- if and (.Index.IsUnique) (eq ( len .Fields ) 1) }}
 func (l *List{{ .Type.Name }}) MapBy{{ (index .Fields 0).Name }}() (m map[{{ (index .Fields 0).Type }}]{{ .Type.Name }}) {
     m = make (map[{{ (index .Fields 0).Type }}]{{ .Type.Name }}, len(l.Data))
@@ -21,4 +22,5 @@ func (l *List{{ .Type.Name }}) MapBy{{ (index .Fields 0).Name }}() (m map[{{ (in
     }
     return m
 }
+{{- end }}
 {{- end }}
